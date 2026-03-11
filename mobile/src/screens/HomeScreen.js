@@ -100,6 +100,7 @@ export default function HomeScreen({ navigation }) {
     { icon: '🕐', label: 'Emploi du Temps', screen: 'EmploiTemps' },
     { icon: '🔔', label: 'Notifications', screen: 'Notifications' },
     { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
+    { icon: '🪪', label: 'Ma Carte Scolaire', screen: 'Carte' },
     { icon: '👤', label: 'Mon Profil', screen: 'Profil' },
   ];
 

@@ -18,15 +18,17 @@ router.get('/', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET un étudiant par ID
-router.get('/:id', auth, async (req, res) => {
+// GET profil étudiant par Id_UTILISATEUR
+router.get('/profil/:id', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT e.*, c.Nom_Classe, f.Nom_Filiere
+      `SELECT e.*, c.Nom_Classe, f.Nom_Filiere, cy.Lib_Cycle
        FROM ETUDIANT e
        LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
        LEFT JOIN FILIERE f ON c.Id_FILIERE = f.Id_FILIERE
-       WHERE e.Id_ETUDIANT = ?`,
+       LEFT JOIN CYCLE_ cy ON f.Id_CYCLE = cy.Id_CYCLE
+       JOIN UTILISATEUR u ON u.Email_User = e.Email_Etudiant
+       WHERE u.Id_UTILISATEUR = ?`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Étudiant introuvable' });
