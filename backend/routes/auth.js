@@ -123,4 +123,56 @@ router.put('/password', auth, async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────
+// PUT /api/auth/profil/:id — Modifier infos profil
+// ─────────────────────────────────────────────
+router.put('/profil/:id', auth, async (req, res) => {
+  try {
+    const { Nom_User, Email_User } = req.body;
+    if (!Nom_User) return res.status(400).json({ error: 'Nom requis' });
+
+    await db.query(
+      'UPDATE UTILISATEUR SET Nom_User = ?, Email_User = ? WHERE Id_UTILISATEUR = ?',
+      [Nom_User, Email_User, req.params.id]
+    );
+
+    res.json({ message: 'Profil mis à jour avec succès' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
+// PUT /api/auth/password/:id — Changer mot de passe
+// ─────────────────────────────────────────────
+router.put('/password/:id', auth, async (req, res) => {
+  try {
+    const { ancienPassword, nouveauPassword } = req.body;
+
+    if (!ancienPassword || !nouveauPassword) {
+      return res.status(400).json({ error: 'Ancien et nouveau mot de passe requis' });
+    }
+
+    const [rows] = await db.query(
+      'SELECT Password_User FROM UTILISATEUR WHERE Id_UTILISATEUR = ?',
+      [req.params.id]
+    );
+
+    if (!rows.length) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    const valid = await bcrypt.compare(ancienPassword, rows[0].Password_User);
+    if (!valid) return res.status(401).json({ error: 'Mot de passe actuel incorrect' });
+
+    const hash = await bcrypt.hash(nouveauPassword, 12);
+    await db.query(
+      'UPDATE UTILISATEUR SET Password_User = ? WHERE Id_UTILISATEUR = ?',
+      [hash, req.params.id]
+    );
+
+    res.json({ message: 'Mot de passe modifié avec succès' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

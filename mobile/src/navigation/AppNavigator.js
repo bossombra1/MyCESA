@@ -9,6 +9,7 @@ import PaiementsScreen from '../screens/PaiementsScreen';
 import EmploiTempsScreen from '../screens/EmploiTempsScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import ProfilScreen from '../screens/ProfilScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,7 @@ export default function AppNavigator() {
         <Stack.Screen name="EmploiTemps" component={EmploiTempsScreen} options={{ title: 'Emploi du Temps' }} />
         <Stack.Screen name="ChatBot" component={ChatBotScreen} options={{ title: 'Assistant MyCESA' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+        <Stack.Screen name="Profil" component={ProfilScreen} options={{ title: 'Mon Profil' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
