@@ -4,20 +4,29 @@ const router  = express.Router();
 const db      = require('../config/db');
 const auth    = require('../middleware/authMiddleware');
 
-// GET emploi du temps d'une classe
-router.get('/classe/:id', auth, async (req, res) => {
+// GET emploi du temps d'un étudiant (via Id_UTILISATEUR)
+router.get('/etudiant/:id', auth, async (req, res) => {
   try {
+    // Trouver la classe de l'étudiant via son email
+    const [etudiant] = await db.query(
+      `SELECT e.Id_CLASSE FROM ETUDIANT e
+       JOIN UTILISATEUR u ON u.Email_User = e.Email_Etudiant
+       WHERE u.Id_UTILISATEUR = ?`,
+      [req.params.id]
+    );
+    if (!etudiant.length) return res.json([]);
+
     const [rows] = await db.query(
       `SELECT et.*, m.Nom_Matiere, s.Nom_Salle, s.Localisation_Salle,
               p.Nom_Prenoms_Profe AS Nom_Professeur
        FROM EMPLOI_TEMPS et
        JOIN MATIERE m ON et.Id_MATIERE = m.Id_MATIERE
-       JOIN SALLE s   ON et.Id_SALLE   = s.Id_SALLE
+       JOIN SALLE s ON et.Id_SALLE = s.Id_SALLE
        JOIN PROFESSEUR p ON et.Id_PROFESSEUR = p.Id_PROFESSEUR
        WHERE et.Id_CLASSE = ?
        ORDER BY FIELD(et.Jour_Semaine,'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'),
                 et.Heure_Debut`,
-      [req.params.id]
+      [etudiant[0].Id_CLASSE]
     );
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }

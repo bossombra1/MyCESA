@@ -42,6 +42,14 @@ router.get('/:id', auth, async (req, res) => {
 // GET notes d'un étudiant
 router.get('/:id/notes', auth, async (req, res) => {
   try {
+    const [etudiant] = await db.query(
+      `SELECT e.Id_ETUDIANT FROM ETUDIANT e
+       JOIN UTILISATEUR u ON u.Email_User = e.Email_Etudiant
+       WHERE u.Id_UTILISATEUR = ?`,
+      [req.params.id]
+    );
+    if (!etudiant.length) return res.json([]);
+    
     const [rows] = await db.query(
       `SELECT n.*, ev.Lib_Evaluation, ev.Coef_Evaluation, ev.Type_Evaluation,
               ev.Date_Evaluation, s.Lib_Sem
@@ -50,7 +58,7 @@ router.get('/:id/notes', auth, async (req, res) => {
        LEFT JOIN SEMESTRE s ON ev.Id_SEMESTRE = s.Id_SEMESTRE
        WHERE n.Id_ETUDIANT = ?
        ORDER BY ev.Date_Evaluation DESC`,
-      [req.params.id]
+      [etudiant[0].Id_ETUDIANT]
     );
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }

@@ -1,0 +1,5 @@
+Pour voir tous les utilisateurs et leurs logins, exécute dans phpMyAdmin :
+
+
+SELECT Id_UTILISATEUR, Nom_User, Login_User, Email_User, Id_ROLE 
+FROM utilisateur;

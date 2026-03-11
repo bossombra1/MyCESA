@@ -7,13 +7,21 @@ const auth    = require('../middleware/authMiddleware');
 // GET versements d'un étudiant
 router.get('/etudiant/:id', auth, async (req, res) => {
   try {
+    const [etudiant] = await db.query(
+      `SELECT e.Id_ETUDIANT FROM ETUDIANT e
+       JOIN UTILISATEUR u ON u.Email_User = e.Email_Etudiant
+       WHERE u.Id_UTILISATEUR = ?`,
+      [req.params.id]
+    );
+    if (!etudiant.length) return res.json({ paiements: [], totalPaye: 0 });
+
     const [rows] = await db.query(
       `SELECT v.*, vs.Lib_Versement, vs.Montant_Total, vs.Date_Versement
        FROM VERSER v
        JOIN VERSEMENT vs ON v.Id_VERSEMENT = vs.Id_VERSEMENT
        WHERE v.Id_ETUDIANT = ?
        ORDER BY vs.Date_Versement DESC`,
-      [req.params.id]
+      [etudiant[0].Id_ETUDIANT]
     );
     const totalPaye = rows.reduce((sum, r) => sum + (parseFloat(r.Montant) || 0), 0);
     res.json({ paiements: rows, totalPaye });

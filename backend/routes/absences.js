@@ -7,15 +7,22 @@ const auth    = require('../middleware/authMiddleware');
 // GET absences d'un étudiant
 router.get('/etudiant/:id', auth, async (req, res) => {
   try {
+    const [etudiant] = await db.query(
+      `SELECT e.Id_ETUDIANT FROM ETUDIANT e
+       JOIN UTILISATEUR u ON u.Email_User = e.Email_Etudiant
+       WHERE u.Id_UTILISATEUR = ?`,
+      [req.params.id]
+    );
+    if (!etudiant.length) return res.json({ absences: [], totalHeures: 0 });
+
     const [rows] = await db.query(
       `SELECT a.*, u.Nom_User AS Saisie_Par
        FROM ABSENTER a
        LEFT JOIN UTILISATEUR u ON a.Id_UTILISATEUR = u.Id_UTILISATEUR
        WHERE a.Id_ETUDIANT = ?
        ORDER BY a.Date_absence DESC`,
-      [req.params.id]
+      [etudiant[0].Id_ETUDIANT]
     );
-    // Total d'heures d'absence
     const totalHeures = rows.reduce((sum, r) => sum + (parseFloat(r.Nbre_heure) || 0), 0);
     res.json({ absences: rows, totalHeures });
   } catch (err) { res.status(500).json({ error: err.message }); }

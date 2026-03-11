@@ -16,7 +16,7 @@ export default function EmploiTempsScreen() {
     try {
       const stored = await AsyncStorage.getItem('user');
       const user = JSON.parse(stored);
-      const response = await API.get(`/emploiTemps/classe/${user.Id_UTILISATEUR}`);
+      const response = await API.get(`/emploiTemps/etudiant/${user.Id_UTILISATEUR}`);
       setEmploi(response.data);
     } catch (err) {
       Alert.alert('Erreur', 'Impossible de charger l\'emploi du temps');
