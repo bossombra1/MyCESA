@@ -98,6 +98,7 @@ export default function HomeScreen({ navigation }) {
     { icon: '📅', label: 'Mes Absences', screen: 'Absences' },
     { icon: '💰', label: 'Mes Paiements', screen: 'Paiements' },
     { icon: '🕐', label: 'Emploi du Temps', screen: 'EmploiTemps' },
+    { icon: '🔔', label: 'Notifications', screen: 'Notifications' },
     { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
   ];
 

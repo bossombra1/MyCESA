@@ -8,6 +8,7 @@ import AbsencesScreen from '../screens/AbsencesScreen';
 import PaiementsScreen from '../screens/PaiementsScreen';
 import EmploiTempsScreen from '../screens/EmploiTempsScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,12 +23,13 @@ export default function AppNavigator() {
           headerTitleStyle: { fontWeight: 'bold' },
         }}>
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Accueil' }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Notes" component={NotesScreen} options={{ title: 'Mes Notes' }} />
         <Stack.Screen name="Absences" component={AbsencesScreen} options={{ title: 'Mes Absences' }} />
         <Stack.Screen name="Paiements" component={PaiementsScreen} options={{ title: 'Mes Paiements' }} />
         <Stack.Screen name="EmploiTemps" component={EmploiTempsScreen} options={{ title: 'Emploi du Temps' }} />
         <Stack.Screen name="ChatBot" component={ChatBotScreen} options={{ title: 'Assistant MyCESA' }} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
