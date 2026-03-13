@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Alert, Platform, StatusBar,
@@ -17,6 +18,7 @@ export default function HomeScreen({ navigation }) {
   const [moyenneGen, setMoyenneGen] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const menuAnim = useRef(new Animated.Value(-300)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     loadUser();
@@ -125,7 +127,7 @@ export default function HomeScreen({ navigation }) {
   ];
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 16 }] }>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
       {menuVisible && (
