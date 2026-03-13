@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Alert, Platform, StatusBar,
-  Animated, Dimensions
+  Animated, Dimensions, RefreshControl
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from '../api/api';
@@ -12,12 +12,17 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen({ navigation }) {
   const [user, setUser] = useState(null);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [stats, setStats] = useState({ notes: 0, absences: 0, paiements: 0, cours: 0 });
+  const [stats, setStats] = useState({ notes: 0, absences: 0, paiements: 0 });
+  const [nonLus, setNonLus] = useState(0);
+  const [moyenneGen, setMoyenneGen] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const menuAnim = useRef(new Animated.Value(-300)).current;
 
   useEffect(() => {
     loadUser();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', loadUser);
+    return unsubscribe;
+  }, [navigation]);
 
   const loadUser = async () => {
     try {
@@ -26,6 +31,7 @@ export default function HomeScreen({ navigation }) {
         const u = JSON.parse(stored);
         setUser(u);
         loadStats(u);
+        loadNonLus(u);
       }
     } catch (e) {}
   };
@@ -37,50 +43,55 @@ export default function HomeScreen({ navigation }) {
         API.get(`/absences/etudiant/${u.Id_UTILISATEUR}`),
         API.get(`/versements/etudiant/${u.Id_UTILISATEUR}`),
       ]);
+      const notes = notesRes.status === 'fulfilled' ? notesRes.value.data : [];
+      if (notes.length > 0) {
+        const total = notes.reduce((s, n) => s + parseFloat(n.Note_Evaluation || 0), 0);
+        setMoyenneGen((total / notes.length).toFixed(2));
+      }
       setStats({
-        notes: notesRes.status === 'fulfilled' ? notesRes.value.data.length : 0,
+        notes: notes.length,
         absences: absRes.status === 'fulfilled' ? absRes.value.data.absences?.length || 0 : 0,
         paiements: paiRes.status === 'fulfilled' ? paiRes.value.data.paiements?.length || 0 : 0,
       });
     } catch (e) {}
   };
 
+  const loadNonLus = async (u) => {
+    try {
+      const res = await API.get(`/notifications/user/${u.Id_UTILISATEUR}`);
+      setNonLus(res.data.filter(n => !n.Lu).length);
+    } catch (e) {}
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadUser();
+    setRefreshing(false);
+  };
+
   const toggleMenu = () => {
     if (menuVisible) {
-      Animated.timing(menuAnim, {
-        toValue: -300,
-        duration: 280,
-        useNativeDriver: true,
-      }).start(() => setMenuVisible(false));
+      Animated.timing(menuAnim, { toValue: -300, duration: 280, useNativeDriver: true }).start(() => setMenuVisible(false));
     } else {
       setMenuVisible(true);
-      Animated.timing(menuAnim, {
-        toValue: 0,
-        duration: 280,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(menuAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start();
     }
   };
 
   const handleLogout = async () => {
     toggleMenu();
     setTimeout(async () => {
+      const doLogout = async () => {
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+        navigation.replace('Login');
+      };
       if (Platform.OS === 'web') {
-        if (window.confirm('Voulez-vous vous déconnecter ?')) {
-          await AsyncStorage.removeItem('token');
-          await AsyncStorage.removeItem('user');
-          navigation.replace('Login');
-        }
+        if (window.confirm('Voulez-vous vous déconnecter ?')) doLogout();
       } else {
         Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
           { text: 'Annuler', style: 'cancel' },
-          {
-            text: 'Déconnexion', style: 'destructive', onPress: async () => {
-              await AsyncStorage.removeItem('token');
-              await AsyncStorage.removeItem('user');
-              navigation.replace('Login');
-            }
-          }
+          { text: 'Déconnexion', style: 'destructive', onPress: doLogout }
         ]);
       }
     }, 300);
@@ -92,35 +103,37 @@ export default function HomeScreen({ navigation }) {
   };
 
   const initiale = user?.Nom_User?.charAt(0)?.toUpperCase() || 'E';
+  const heure = new Date().getHours();
+  const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   const menuItems = [
-    { icon: '📝', label: 'Mes Notes', screen: 'Notes' },
-    { icon: '📅', label: 'Mes Absences', screen: 'Absences' },
-    { icon: '💰', label: 'Mes Paiements', screen: 'Paiements' },
-    { icon: '🕐', label: 'Emploi du Temps', screen: 'EmploiTemps' },
-    { icon: '🔔', label: 'Notifications', screen: 'Notifications' },
-    { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
-    { icon: '🪪', label: 'Ma Carte Scolaire', screen: 'Carte' },
-    { icon: '👤', label: 'Mon Profil', screen: 'Profil' },
+    { icon: '📝', label: 'Mes Notes', screen: 'Notes', color: '#EFF6FF' },
+    { icon: '📅', label: 'Mes Absences', screen: 'Absences', color: '#FFF7ED' },
+    { icon: '💰', label: 'Mes Paiements', screen: 'Paiements', color: '#F0FDF4' },
+    { icon: '🕐', label: 'Emploi du Temps', screen: 'EmploiTemps', color: '#FDF4FF' },
+    { icon: '🔔', label: 'Notifications', screen: 'Notifications', color: '#FFF1F2', badge: nonLus },
+    { icon: '🪪', label: 'Ma Carte Scolaire', screen: 'Carte', color: '#FFFBEB' },
+    { icon: '👤', label: 'Mon Profil', screen: 'Profil', color: '#F0F9FF' },
+    { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot', color: '#F5F3FF' },
+  ];
+
+  const quickActions = [
+    { icon: '📝', label: 'Notes', screen: 'Notes', bg: '#2563EB' },
+    { icon: '📅', label: 'Absences', screen: 'Absences', bg: '#F59E0B' },
+    { icon: '💰', label: 'Paiements', screen: 'Paiements', bg: '#10B981' },
+    { icon: '🕐', label: 'Emploi', screen: 'EmploiTemps', bg: '#8B5CF6' },
   ];
 
   return (
     <View style={styles.wrapper}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A1929" />
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* OVERLAY */}
       {menuVisible && (
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={toggleMenu}
-        />
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={toggleMenu} />
       )}
 
-      {/* MENU DÉROULANT */}
+      {/* DRAWER */}
       <Animated.View style={[styles.drawer, { transform: [{ translateX: menuAnim }] }]}>
-        
-        {/* PROFIL */}
         <View style={styles.drawerHeader}>
           <View style={styles.drawerAvatar}>
             <Text style={styles.drawerAvatarTxt}>{initiale}</Text>
@@ -130,82 +143,141 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.drawerEmail}>{user?.Email_User || ''}</Text>
         </View>
 
-        {/* ITEMS */}
-        <ScrollView style={styles.drawerItems}>
+        <ScrollView style={styles.drawerItems} showsVerticalScrollIndicator={false}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.drawerItem}
-              onPress={() => navigateTo(item.screen)}
-            >
-              <Text style={styles.drawerItemIcon}>{item.icon}</Text>
+            <TouchableOpacity key={index} style={styles.drawerItem} onPress={() => navigateTo(item.screen)}>
+              <View style={[styles.drawerIconBox, { backgroundColor: item.color }]}>
+                <Text style={styles.drawerItemIcon}>{item.icon}</Text>
+              </View>
               <Text style={styles.drawerItemLabel}>{item.label}</Text>
+              {item.badge > 0 && (
+                <View style={styles.drawerBadge}>
+                  <Text style={styles.drawerBadgeTxt}>{item.badge}</Text>
+                </View>
+              )}
               <Text style={styles.drawerItemArrow}>›</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* DÉCONNEXION */}
         <TouchableOpacity style={styles.drawerLogout} onPress={handleLogout}>
           <Text style={styles.drawerLogoutIcon}>🚪</Text>
           <Text style={styles.drawerLogoutTxt}>Se déconnecter</Text>
         </TouchableOpacity>
       </Animated.View>
 
-      {/* CONTENU PRINCIPAL */}
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-
+      {/* CONTENU */}
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
+      >
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.menuBtn} onPress={toggleMenu}>
-            <Text style={styles.menuBtnIcon}>☰</Text>
+            <View style={styles.hamburger}>
+              <View style={styles.hamburgerLine} />
+              <View style={[styles.hamburgerLine, { width: 16 }]} />
+              <View style={styles.hamburgerLine} />
+            </View>
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>MyCESA</Text>
-          </View>
-          <View style={styles.drawerAvatarSmall}>
-            <Text style={styles.drawerAvatarSmallTxt}>{initiale}</Text>
-          </View>
+          <Text style={styles.headerTitle}>MyCESA</Text>
+          <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
+            <Text style={styles.notifIcon}>🔔</Text>
+            {nonLus > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeTxt}>{nonLus > 9 ? '9+' : nonLus}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
-        {/* SALUTATION */}
-        <View style={styles.greetBox}>
-          <Text style={styles.greetTxt}>
-            {new Date().getHours() < 12 ? 'Bonjour' : new Date().getHours() < 18 ? 'Bon après-midi' : 'Bonsoir'} 👋
-          </Text>
-          <Text style={styles.greetNom}>{user?.Nom_User || 'Étudiant'}</Text>
-          <View style={styles.greetBadge}>
-            <Text style={styles.greetBadgeTxt}>{user?.Lib_Role || 'Étudiant'}</Text>
+        {/* HERO */}
+        <View style={styles.hero}>
+          <View style={styles.heroContent}>
+            <Text style={styles.heroSalut}>{salutation} 👋</Text>
+            <Text style={styles.heroNom}>{user?.Nom_User || 'Étudiant'}</Text>
+            <View style={styles.heroRoleBadge}>
+              <Text style={styles.heroRoleTxt}>🎓 {user?.Lib_Role || 'Étudiant'}</Text>
+            </View>
           </View>
+          <TouchableOpacity style={styles.heroAvatar} onPress={() => navigation.navigate('Profil')}>
+            <Text style={styles.heroAvatarTxt}>{initiale}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* CARTE MOYENNE */}
+        {moyenneGen && (
+          <View style={styles.moyenneCard}>
+            <View style={styles.moyenneLeft}>
+              <Text style={styles.moyenneLabel}>Moyenne Générale</Text>
+              <Text style={styles.moyenneVal}>{moyenneGen}<Text style={styles.moyenneSur}>/20</Text></Text>
+            </View>
+            <View style={styles.moyenneRight}>
+              <View style={[styles.moyenneBadge, {
+                backgroundColor: parseFloat(moyenneGen) >= 14 ? '#D1FAE5' : parseFloat(moyenneGen) >= 10 ? '#FEF3C7' : '#FEE2E2'
+              }]}>
+                <Text style={[styles.moyenneBadgeTxt, {
+                  color: parseFloat(moyenneGen) >= 14 ? '#065F46' : parseFloat(moyenneGen) >= 10 ? '#92400E' : '#991B1B'
+                }]}>
+                  {parseFloat(moyenneGen) >= 14 ? '⭐ Excellent' : parseFloat(moyenneGen) >= 10 ? '👍 Passable' : '⚠️ Insuffisant'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ACCÈS RAPIDE */}
+        <Text style={styles.sectionTitre}>Accès Rapide</Text>
+        <View style={styles.quickGrid}>
+          {quickActions.map((item, i) => (
+            <TouchableOpacity key={i} style={[styles.quickCard, { backgroundColor: item.bg }]} onPress={() => navigation.navigate(item.screen)}>
+              <Text style={styles.quickIcon}>{item.icon}</Text>
+              <Text style={styles.quickLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* STATS */}
         <Text style={styles.sectionTitre}>Mes Statistiques</Text>
-
-        <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+        <View style={styles.statsRow}>
+          <TouchableOpacity style={[styles.statCard, { borderLeftColor: '#2563EB' }]} onPress={() => navigation.navigate('Notes')}>
             <Text style={styles.statIcon}>📝</Text>
-            <Text style={styles.statVal}>{stats.notes}</Text>
-            <Text style={styles.statLbl}>Notes</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+            <View>
+              <Text style={styles.statVal}>{stats.notes}</Text>
+              <Text style={styles.statLbl}>Évaluations</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.statCard, { borderLeftColor: '#F59E0B' }]} onPress={() => navigation.navigate('Absences')}>
             <Text style={styles.statIcon}>📅</Text>
-            <Text style={styles.statVal}>{stats.absences}</Text>
-            <Text style={styles.statLbl}>Absences</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <View>
+              <Text style={styles.statVal}>{stats.absences}</Text>
+              <Text style={styles.statLbl}>Absences</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.statCard, { borderLeftColor: '#10B981' }]} onPress={() => navigation.navigate('Paiements')}>
             <Text style={styles.statIcon}>💰</Text>
-            <Text style={styles.statVal}>{stats.paiements}</Text>
-            <Text style={styles.statLbl}>Paiements</Text>
-          </View>
+            <View>
+              <Text style={styles.statVal}>{stats.paiements}</Text>
+              <Text style={styles.statLbl}>Paiements</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
-        {/* CARTE INFO */}
-        <View style={styles.infoCard}>
+        {/* CARTE SCOLAIRE RAPIDE */}
+        <TouchableOpacity style={styles.carteBtn} onPress={() => navigation.navigate('Carte')}>
+          <Text style={styles.carteBtnIcon}>🪪</Text>
           <View>
-            <Text style={styles.infoCardTitre}>🎓 MyCESA</Text>
-            <Text style={styles.infoCardSub}>Application de Gestion Scolaire</Text>
+            <Text style={styles.carteBtnTitre}>Ma Carte Scolaire</Text>
+            <Text style={styles.carteBtnSub}>Voir ma carte virtuelle CESA</Text>
           </View>
+          <Text style={styles.carteBtnArrow}>›</Text>
+        </TouchableOpacity>
+
+        {/* FOOTER INFO */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoCardTitre}>🎓 GROUPE COFE-CESA</Text>
+          <Text style={styles.infoCardSub}>Une excellence à votre service !</Text>
           <View style={styles.infoCardBadge}>
             <Text style={styles.infoCardBadgeTxt}>● En ligne</Text>
           </View>
@@ -214,189 +286,192 @@ export default function HomeScreen({ navigation }) {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* FAB CHATBOT */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('ChatBot')}
-        activeOpacity={0.85}
-      >
+      {/* FAB */}
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('ChatBot')} activeOpacity={0.85}>
         <Text style={styles.fabIcon}>🤖</Text>
         <Text style={styles.fabTxt}>Assistant</Text>
       </TouchableOpacity>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: '#F0F4FF' },
+  wrapper: { flex: 1, backgroundColor: '#F8FAFF' },
   container: { flex: 1 },
-
-  // OVERLAY
   overlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 10,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 10,
   },
 
   // DRAWER
   drawer: {
-    position: 'absolute',
-    top: 0, left: 0, bottom: 0,
-    width: 280,
-    backgroundColor: '#fff',
-    zIndex: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 20,
+    position: 'absolute', top: 0, left: 0, bottom: 0, width: 285,
+    backgroundColor: '#fff', zIndex: 20, elevation: 20,
+    shadowColor: '#000', shadowOffset: { width: 4, height: 0 },
+    shadowOpacity: 0.2, shadowRadius: 16,
   },
   drawerHeader: {
-    backgroundColor: '#1B2A4A',
-    padding: 24,
-    paddingTop: 48,
-    alignItems: 'center',
+    backgroundColor: '#0F172A', padding: 24, paddingTop: 52, alignItems: 'center',
   },
   drawerAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#60A5FA',
-    marginBottom: 12,
+    width: 76, height: 76, borderRadius: 38, backgroundColor: '#2563EB',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 3, borderColor: '#60A5FA', marginBottom: 12,
   },
-  drawerAvatarTxt: { color: '#fff', fontSize: 28, fontWeight: '800' },
-  drawerNom: { color: '#fff', fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  drawerAvatarTxt: { color: '#fff', fontSize: 30, fontWeight: '800' },
+  drawerNom: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
   drawerRole: { color: '#60A5FA', fontSize: 13, marginTop: 4 },
-  drawerEmail: { color: '#94A3B8', fontSize: 12, marginTop: 2 },
-  drawerItems: { flex: 1, paddingTop: 8 },
+  drawerEmail: { color: '#64748B', fontSize: 12, marginTop: 3 },
+  drawerItems: { flex: 1, paddingVertical: 8 },
   drawerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 12, paddingHorizontal: 16,
+    borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
   },
-  drawerItemIcon: { fontSize: 22, marginRight: 14 },
-  drawerItemLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1B2A4A' },
-  drawerItemArrow: { fontSize: 20, color: '#94A3B8' },
+  drawerIconBox: {
+    width: 36, height: 36, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  },
+  drawerItemIcon: { fontSize: 18 },
+  drawerItemLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1E293B' },
+  drawerItemArrow: { fontSize: 20, color: '#CBD5E1' },
+  drawerBadge: {
+    backgroundColor: '#EF4444', minWidth: 20, height: 20,
+    borderRadius: 10, justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: 4, marginRight: 6,
+  },
+  drawerBadgeTxt: { color: '#fff', fontSize: 11, fontWeight: '800' },
   drawerLogout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#FFF1F2',
+    flexDirection: 'row', alignItems: 'center', padding: 18,
+    borderTopWidth: 1, borderTopColor: '#F1F5F9', backgroundColor: '#FFF1F2',
   },
-  drawerLogoutIcon: { fontSize: 22, marginRight: 12 },
+  drawerLogoutIcon: { fontSize: 20, marginRight: 12 },
   drawerLogoutTxt: { fontSize: 15, fontWeight: '700', color: '#EF4444' },
 
   // HEADER
   header: {
-    backgroundColor: '#1B2A4A',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#0F172A',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + 12,
     paddingBottom: 16,
   },
-  menuBtn: {
-    width: 40, height: 40,
+  menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  hamburger: { gap: 5 },
+  hamburgerLine: { width: 22, height: 2.5, backgroundColor: '#fff', borderRadius: 2 },
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: 1 },
+  notifBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  notifIcon: { fontSize: 22 },
+  notifBadge: {
+    position: 'absolute', top: 5, right: 5,
+    backgroundColor: '#EF4444', minWidth: 17, height: 17,
+    borderRadius: 9, justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#0F172A',
+  },
+  notifBadgeTxt: { color: '#fff', fontSize: 9, fontWeight: '900' },
+
+  // HERO
+  hero: {
+    backgroundColor: '#0F172A',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 32,
+    borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+  },
+  heroContent: { flex: 1 },
+  heroSalut: { color: '#94A3B8', fontSize: 14 },
+  heroNom: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 4 },
+  heroRoleBadge: {
+    backgroundColor: 'rgba(37,99,235,0.3)', paddingHorizontal: 12,
+    paddingVertical: 5, borderRadius: 20, alignSelf: 'flex-start', marginTop: 8,
+    borderWidth: 1, borderColor: 'rgba(96,165,250,0.4)',
+  },
+  heroRoleTxt: { color: '#60A5FA', fontSize: 13, fontWeight: '600' },
+  heroAvatar: {
+    width: 52, height: 52, borderRadius: 26, backgroundColor: '#2563EB',
     justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2.5, borderColor: '#60A5FA',
   },
-  menuBtnIcon: { color: '#fff', fontSize: 24 },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  drawerAvatarSmall: {
-    width: 40, height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  drawerAvatarSmallTxt: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  heroAvatarTxt: { color: '#fff', fontSize: 20, fontWeight: '900' },
 
-  // SALUTATION
-  greetBox: {
-    backgroundColor: '#1B2A4A',
-    paddingHorizontal: 20,
-    paddingBottom: 28,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+  // MOYENNE
+  moyenneCard: {
+    backgroundColor: '#fff', margin: 16, marginBottom: 0, borderRadius: 20,
+    padding: 18, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', elevation: 4,
+    shadowColor: '#2563EB', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1, shadowRadius: 12,
+    borderWidth: 1, borderColor: '#EFF6FF',
   },
-  greetTxt: { color: '#94A3B8', fontSize: 14 },
-  greetNom: { color: '#fff', fontSize: 26, fontWeight: '800', marginTop: 4 },
-  greetBadge: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  greetBadgeTxt: { color: '#60A5FA', fontSize: 13, fontWeight: '600' },
+  moyenneLeft: {},
+  moyenneLabel: { fontSize: 13, color: '#64748B', fontWeight: '600' },
+  moyenneVal: { fontSize: 36, fontWeight: '900', color: '#1E293B', marginTop: 2 },
+  moyenneSur: { fontSize: 18, color: '#94A3B8', fontWeight: '600' },
+  moyenneRight: {},
+  moyenneBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  moyenneBadgeTxt: { fontSize: 13, fontWeight: '700' },
 
-  // STATS
+  // SECTION TITRE
   sectionTitre: {
-    fontSize: 18, fontWeight: '800', color: '#1B2A4A',
+    fontSize: 16, fontWeight: '800', color: '#1E293B',
     marginHorizontal: 16, marginTop: 24, marginBottom: 12,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    elevation: 2,
-  },
-  statIcon: { fontSize: 28, marginBottom: 8 },
-  statVal: { fontSize: 28, fontWeight: '800', color: '#1B2A4A' },
-  statLbl: { fontSize: 12, color: '#64748B', marginTop: 4, fontWeight: '600' },
 
-  // CARTE INFO
+  // QUICK ACTIONS
+  quickGrid: { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
+  quickCard: {
+    flex: 1, borderRadius: 18, padding: 16, alignItems: 'center',
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15, shadowRadius: 8,
+  },
+  quickIcon: { fontSize: 28, marginBottom: 6 },
+  quickLabel: { color: '#fff', fontSize: 12, fontWeight: '800' },
+
+  // STATS
+  statsRow: { paddingHorizontal: 12, gap: 10 },
+  statCard: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 0,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    elevation: 2, borderLeftWidth: 4, marginBottom: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06,
+  },
+  statIcon: { fontSize: 28 },
+  statVal: { fontSize: 24, fontWeight: '900', color: '#1E293B' },
+  statLbl: { fontSize: 12, color: '#64748B', fontWeight: '600', marginTop: 2 },
+
+  // CARTE BTN
+  carteBtn: {
+    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 4,
+    borderRadius: 18, padding: 18, flexDirection: 'row', alignItems: 'center',
+    elevation: 3, borderWidth: 1.5, borderColor: '#E2E8F0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08,
+  },
+  carteBtnIcon: { fontSize: 32, marginRight: 14 },
+  carteBtnTitre: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
+  carteBtnSub: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  carteBtnArrow: { marginLeft: 'auto', fontSize: 24, color: '#CBD5E1' },
+
+  // INFO CARD
   infoCard: {
-    backgroundColor: '#2563EB',
-    margin: 16,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    elevation: 8,
+    backgroundColor: '#0F172A', margin: 16, borderRadius: 20, padding: 20,
+    alignItems: 'center', elevation: 8,
   },
-  infoCardTitre: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  infoCardSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4 },
+  infoCardTitre: { color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  infoCardSub: { color: '#94A3B8', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
   infoCardBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    backgroundColor: 'rgba(16,185,129,0.2)', paddingHorizontal: 14,
+    paddingVertical: 6, borderRadius: 20, marginTop: 10,
+    borderWidth: 1, borderColor: 'rgba(16,185,129,0.4)',
   },
-  infoCardBadgeTxt: { color: '#86EFAC', fontSize: 12, fontWeight: '700' },
+  infoCardBadgeTxt: { color: '#34D399', fontSize: 12, fontWeight: '700' },
 
   // FAB
   fab: {
-    position: 'absolute',
-    bottom: 28, right: 20,
-    backgroundColor: '#2563EB',
-    borderRadius: 32,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    elevation: 10,
+    position: 'absolute', bottom: 28, right: 20,
+    backgroundColor: '#2563EB', borderRadius: 32,
+    paddingHorizontal: 18, paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', elevation: 10,
+    shadowColor: '#2563EB', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 12,
   },
   fabIcon: { fontSize: 22 },
   fabTxt: { color: '#fff', fontSize: 14, fontWeight: '800', marginLeft: 8 },
