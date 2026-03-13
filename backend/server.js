@@ -13,6 +13,10 @@ const io     = new Server(server, {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Servir les fichiers statiques (photos uploadées)
+app.use('/uploads', express.static('uploads'));
+
 app.set('io', io);
 
 app.use('/api/auth',          require('./routes/auth'));
@@ -25,6 +29,10 @@ app.use('/api/emploiTemps',   require('./routes/emploiTemps'));
 app.use('/api/chatbot',       require('./routes/chatbot'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/professeurs',   require('./routes/professeurs'));
+
+// Routes d'upload
+const uploadRoutes = require('./routes/upload');
+app.use('/api/upload', uploadRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: '🎓 MyCESA API en ligne !' });

@@ -3,10 +3,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Alert, Platform, StatusBar,
-  Animated, Dimensions, RefreshControl
+  Animated, Dimensions, RefreshControl, Image
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import API from '../api/api';
+import API, { SERVER_URL } from '../api/api';
 
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
@@ -29,17 +29,26 @@ export default function HomeScreen({ navigation }) {
     return unsubscribe;
   }, [navigation]);
 
-  const loadUser = async () => {
-    try {
-      const stored = await AsyncStorage.getItem('user');
-      if (stored) {
-        const u = JSON.parse(stored);
-        setUser(u);
-        loadStats(u);
-        loadNonLus(u);
-      }
-    } catch (e) {}
-  };
+ const loadUser = async () => {
+  try {
+    const stored = await AsyncStorage.getItem('user');
+    if (stored) {
+      const u = JSON.parse(stored);
+      setUser(u);
+      loadStats(u);
+      loadNonLus(u);
+      // Recharger la photo depuis l'API à chaque focus
+      try {
+        const res = await API.get(`/etudiants/profil/${u.Id_UTILISATEUR}`);
+        if (res.data?.Image_Etudiant) {
+          const updatedUser = { ...u, Image_Etudiant: res.data.Image_Etudiant };
+          await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
+};
 
   const loadStats = async (u) => {
     try {
@@ -130,8 +139,8 @@ export default function HomeScreen({ navigation }) {
   ];
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 16 }] }>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 16 }]}>
+      <StatusBar barStyle="light-content" backgroundColor={VERT} />
 
       {menuVisible && (
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={toggleMenu} />
@@ -140,9 +149,17 @@ export default function HomeScreen({ navigation }) {
       {/* DRAWER */}
       <Animated.View style={[styles.drawer, { transform: [{ translateX: menuAnim }] }]}>
         <View style={styles.drawerHeader}>
-          <View style={styles.drawerAvatar}>
-            <Text style={styles.drawerAvatarTxt}>{initiale}</Text>
-          </View>
+          {/* AVATAR DRAWER avec photo */}
+          {user?.Image_Etudiant ? (
+            <Image
+              source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }}
+              style={styles.drawerAvatarImg}
+            />
+          ) : (
+            <View style={styles.drawerAvatar}>
+              <Text style={styles.drawerAvatarTxt}>{initiale}</Text>
+            </View>
+          )}
           <Text style={styles.drawerNom}>{user?.Nom_User || 'Étudiant'}</Text>
           <Text style={styles.drawerRole}>{user?.Lib_Role || ''}</Text>
           <Text style={styles.drawerEmail}>{user?.Email_User || ''}</Text>
@@ -175,7 +192,7 @@ export default function HomeScreen({ navigation }) {
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={VERT} />}
       >
         {/* HEADER */}
         <View style={styles.header}>
@@ -207,7 +224,14 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
           <TouchableOpacity style={styles.heroAvatar} onPress={() => navigation.navigate('Profil')}>
-            <Text style={styles.heroAvatarTxt}>{initiale}</Text>
+            {user?.Image_Etudiant ? (
+              <Image
+                source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }}
+                style={styles.heroAvatarImg}
+              />
+            ) : (
+              <Text style={styles.heroAvatarTxt}>{initiale}</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -321,12 +345,16 @@ const styles = StyleSheet.create({
   drawerAvatar: {
     width: 76, height: 76, borderRadius: 38, backgroundColor: ORANGE,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: '#60A5FA', marginBottom: 12,
+    borderWidth: 3, borderColor: '#fff', marginBottom: 12,
+  },
+  drawerAvatarImg: {
+    width: 76, height: 76, borderRadius: 38,
+    borderWidth: 3, borderColor: '#fff', marginBottom: 12,
   },
   drawerAvatarTxt: { color: '#fff', fontSize: 30, fontWeight: '800' },
   drawerNom: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
   drawerRole: { color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4 },
-  drawerEmail: { color: '#64748B', fontSize: 12, marginTop: 3 },
+  drawerEmail: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 3 },
   drawerItems: { flex: 1, paddingVertical: 8 },
   drawerItem: {
     flexDirection: 'row', alignItems: 'center',
@@ -371,7 +399,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 5, right: 5,
     backgroundColor: ORANGE, minWidth: 17, height: 17,
     borderRadius: 9, justifyContent: 'center', alignItems: 'center',
-    paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#0F172A',
+    paddingHorizontal: 3, borderWidth: 1.5, borderColor: VERT,
   },
   notifBadgeTxt: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
@@ -383,7 +411,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
   },
   heroContent: { flex: 1 },
-  heroSalut: { color: '#94A3B8', fontSize: 14 },
+  heroSalut: { color: 'rgba(255,255,255,0.75)', fontSize: 14 },
   heroNom: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 4 },
   heroRoleBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12,
@@ -394,9 +422,10 @@ const styles = StyleSheet.create({
   heroAvatar: {
     width: 52, height: 52, borderRadius: 26, backgroundColor: ORANGE,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2.5, borderColor: '#60A5FA',
+    borderWidth: 2.5, borderColor: '#fff', overflow: 'hidden',
   },
   heroAvatarTxt: { color: '#fff', fontSize: 20, fontWeight: '900' },
+  heroAvatarImg: { width: 52, height: 52, borderRadius: 26 },
 
   // MOYENNE
   moyenneCard: {
@@ -415,7 +444,6 @@ const styles = StyleSheet.create({
   moyenneBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   moyenneBadgeTxt: { fontSize: 13, fontWeight: '700' },
 
-  // SECTION TITRE
   sectionTitre: {
     fontSize: 16, fontWeight: '800', color: '#1E293B',
     marginHorizontal: 16, marginTop: 24, marginBottom: 12,
@@ -434,7 +462,7 @@ const styles = StyleSheet.create({
   // STATS
   statsRow: { paddingHorizontal: 12, gap: 10 },
   statCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 0,
+    backgroundColor: '#fff', borderRadius: 16, padding: 16,
     flexDirection: 'row', alignItems: 'center', gap: 14,
     elevation: 2, borderLeftWidth: 4, marginBottom: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06,
@@ -462,7 +490,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: ORANGE,
   },
   infoCardTitre: { color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' },
-  infoCardSub: { color: '#94A3B8', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
+  infoCardSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
   infoCardBadge: {
     backgroundColor: 'rgba(16,185,129,0.2)', paddingHorizontal: 14,
     paddingVertical: 6, borderRadius: 20, marginTop: 10,
@@ -476,7 +504,7 @@ const styles = StyleSheet.create({
     backgroundColor: ORANGE, borderRadius: 32,
     paddingHorizontal: 18, paddingVertical: 14,
     flexDirection: 'row', alignItems: 'center', elevation: 10,
-    shadowColor: '#2563EB', shadowOffset: { width: 0, height: 6 },
+    shadowColor: ORANGE, shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4, shadowRadius: 12,
   },
   fabIcon: { fontSize: 22 },

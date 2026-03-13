@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, Platform, ActivityIndicator, StatusBar
+  TextInput, Alert, Platform, ActivityIndicator, StatusBar,
+  Image
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import API from '../api/api';
+import * as ImagePicker from 'expo-image-picker';
+import API, { SERVER_URL } from '../api/api';
 
 const VERT   = '#2E7D32';
-const VERT2  = '#388E3C';
 const ORANGE = '#D84315';
 const BLANC  = '#FFFFFF';
 
@@ -26,6 +27,8 @@ export default function ProfilScreen({ navigation }) {
   const [showAncien, setShowAncien] = useState(false);
   const [showNouveau, setShowNouveau] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [photoUri, setPhotoUri] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const insets = useSafeAreaInsets();
 
   useEffect(() => { loadUser(); }, []);
@@ -41,10 +44,71 @@ export default function ProfilScreen({ navigation }) {
         try {
           const res = await API.get(`/etudiants/profil/${u.Id_UTILISATEUR}`);
           setEtudiant(res.data);
+          // Charger photo depuis AsyncStorage si disponible
+          if (u.Image_Etudiant) {
+            // déjà dans etudiant via API
+          }
         } catch (e) {}
       }
     } catch (e) {}
     finally { setLoading(false); }
+  };
+
+  const choisirPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showAlertMsg('Permission refusée', "Autorisez l'accès à la galerie dans les paramètres.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        setPhotoUri(uri);
+        await uploadPhoto(uri);
+      }
+    } catch (err) {
+      showAlertMsg('Erreur', "Impossible d'ouvrir la galerie");
+    }
+  };
+
+  const uploadPhoto = async (uri) => {
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      const filename = uri.split('/').pop();
+      const ext = filename.split('.').pop();
+      formData.append('photo', {
+        uri,
+        name: filename,
+        type: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+      });
+      const response = await API.post(
+        `/upload/photo/${user.Id_UTILISATEUR}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      if (response.data.imageUrl) {
+        setEtudiant(prev => ({ ...prev, Image_Etudiant: response.data.imageUrl }));
+        // Sauvegarder dans AsyncStorage pour persistance
+        const stored = await AsyncStorage.getItem('user');
+        const u = JSON.parse(stored);
+        const updatedUser = { ...u, Image_Etudiant: response.data.imageUrl };
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        setPhotoUri(null); // Reset URI local, utiliser l'image du serveur
+        showAlertMsg('✅ Succès', 'Photo mise à jour !');
+      }
+    } catch (err) {
+      console.log('Erreur upload photo:', err);
+      showAlertMsg('Erreur', "Impossible d'uploader la photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const showAlertMsg = (titre, message) => {
@@ -93,6 +157,11 @@ export default function ProfilScreen({ navigation }) {
 
   const strength = getStrength(nouveauMdp);
   const initiale = user?.Nom_User?.charAt(0)?.toUpperCase() || 'E';
+  const photoSource = photoUri
+    ? { uri: photoUri }
+    : etudiant?.Image_Etudiant
+      ? { uri: `${SERVER_URL}${etudiant.Image_Etudiant}` }
+      : null;
 
   if (loading) return (
     <View style={styles.center}>
@@ -113,28 +182,35 @@ export default function ProfilScreen({ navigation }) {
         <View style={styles.hero}>
           <View style={styles.decoCircle1} />
           <View style={styles.decoCircle2} />
-
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backTxt}>‹</Text>
           </TouchableOpacity>
-
           <Text style={styles.heroTitle}>Mon Profil</Text>
         </View>
 
         {/* CARTE PROFIL */}
         <View style={styles.profileCard}>
-          {/* AVATAR */}
-          <View style={styles.avatarWrapper}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarTxt}>{initiale}</Text>
+
+          {/* AVATAR / PHOTO */}
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={choisirPhoto}
+            disabled={uploadingPhoto}
+          >
+            {photoSource ? (
+              <Image source={photoSource} style={styles.avatarImg} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarTxt}>{initiale}</Text>
+              </View>
+            )}
+            <View style={[styles.avatarBadge, uploadingPhoto && { backgroundColor: '#94A3B8' }]}>
+              {uploadingPhoto
+                ? <ActivityIndicator size="small" color={BLANC} />
+                : <Text style={styles.avatarBadgeTxt}>📷</Text>
+              }
             </View>
-            {/* 📸 PHOTO : quand Image_Etudiant sera disponible, remplacer par :
-              <Image source={{ uri: etudiant?.Image_Etudiant }} style={styles.avatarImg} />
-            */}
-            <View style={styles.avatarBadge}>
-              <Text style={styles.avatarBadgeTxt}>📷</Text>
-            </View>
-          </View>
+          </TouchableOpacity>
 
           <Text style={styles.profileNom}>{user?.Nom_User}</Text>
           <View style={styles.profileRoleBadge}>
@@ -187,7 +263,6 @@ export default function ProfilScreen({ navigation }) {
 
         {/* CONTENU */}
         <View style={styles.contentCard}>
-
           {activeTab === 'infos' ? (
             <>
               <Text style={styles.sectionTitre}>Informations personnelles</Text>
@@ -233,14 +308,6 @@ export default function ProfilScreen({ navigation }) {
                   </View>
                 </>
               )}
-
-              {/* NOTE PHOTO */}
-              <View style={styles.photoNote}>
-                <Text style={styles.photoNoteTxt}>
-                  📷 La fonctionnalité de photo de profil sera disponible prochainement.
-                  Votre photo sera liée à la colonne <Text style={{ fontWeight: '800' }}>Image_Etudiant</Text> de la base de données.
-                </Text>
-              </View>
 
               <TouchableOpacity
                 style={[styles.btn, saving && styles.btnDisabled]}
@@ -358,11 +425,10 @@ const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#F5F7F5' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  // HERO
   hero: {
-    backgroundColor: VERT, paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 20,
-    paddingBottom: 70, paddingHorizontal: 20, overflow: 'hidden',
-    alignItems: 'center',
+    backgroundColor: VERT,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 20,
+    paddingBottom: 70, paddingHorizontal: 20, overflow: 'hidden', alignItems: 'center',
   },
   decoCircle1: {
     position: 'absolute', width: 200, height: 200, borderRadius: 100,
@@ -372,11 +438,14 @@ const styles = StyleSheet.create({
     position: 'absolute', width: 140, height: 140, borderRadius: 70,
     backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, left: -30,
   },
-  backBtn: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 10, left: 16 },
+  backBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 10,
+    left: 16,
+  },
   backTxt: { color: BLANC, fontSize: 32, fontWeight: '300' },
   heroTitle: { color: BLANC, fontSize: 20, fontWeight: '800', letterSpacing: 1 },
 
-  // CARTE PROFIL
   profileCard: {
     backgroundColor: BLANC, marginHorizontal: 20, marginTop: -44,
     borderRadius: 28, padding: 24, alignItems: 'center',
@@ -392,6 +461,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, elevation: 8,
   },
   avatarTxt: { color: BLANC, fontSize: 36, fontWeight: '900' },
+  avatarImg: {
+    width: 90, height: 90, borderRadius: 45,
+    borderWidth: 4, borderColor: BLANC,
+  },
   avatarBadge: {
     position: 'absolute', bottom: 0, right: 0,
     backgroundColor: ORANGE, width: 30, height: 30,
@@ -399,10 +472,11 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: BLANC,
   },
   avatarBadgeTxt: { fontSize: 14 },
+
   profileNom: { fontSize: 22, fontWeight: '900', color: '#1E293B' },
   profileRoleBadge: {
-    backgroundColor: '#E8F5E9', paddingHorizontal: 14,
-    paddingVertical: 5, borderRadius: 20, marginTop: 6, marginBottom: 4,
+    backgroundColor: '#E8F5E9', paddingHorizontal: 14, paddingVertical: 5,
+    borderRadius: 20, marginTop: 6, marginBottom: 4,
     borderWidth: 1, borderColor: VERT + '40',
   },
   profileRoleTxt: { color: VERT, fontSize: 13, fontWeight: '700' },
@@ -416,7 +490,6 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 11, color: '#94A3B8', marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 },
   infoDivider: { width: 1, backgroundColor: '#F1F5F9' },
 
-  // TABS
   tabs: {
     flexDirection: 'row', marginHorizontal: 20, marginTop: 16,
     backgroundColor: '#E8F5E9', borderRadius: 16, padding: 4,
@@ -427,7 +500,6 @@ const styles = StyleSheet.create({
   tabTxt: { fontSize: 13, fontWeight: '600', color: '#64748B' },
   tabTxtActive: { color: VERT, fontWeight: '800' },
 
-  // CONTENT CARD
   contentCard: {
     backgroundColor: BLANC, marginHorizontal: 20, marginTop: 12,
     borderRadius: 24, padding: 22, elevation: 4,
@@ -435,7 +507,6 @@ const styles = StyleSheet.create({
   },
   sectionTitre: { fontSize: 16, fontWeight: '900', color: '#1E293B', marginBottom: 20 },
 
-  // INPUTS
   label: {
     fontSize: 11, fontWeight: '700', color: '#64748B',
     marginBottom: 6, marginTop: 14,
@@ -454,7 +525,6 @@ const styles = StyleSheet.create({
   eyeBtn: { fontSize: 18, padding: 4 },
   errorTxt: { fontSize: 12, color: '#EF4444', marginTop: 4 },
 
-  // STRENGTH
   strengthBox: { marginTop: 8, marginBottom: 4 },
   strengthBg: { height: 6, backgroundColor: '#E2E8F0', borderRadius: 6, overflow: 'hidden' },
   strengthFill: { height: '100%', borderRadius: 6 },
@@ -462,21 +532,12 @@ const styles = StyleSheet.create({
   strengthLbl: { fontSize: 12, fontWeight: '700' },
   strengthCount: { fontSize: 12, color: '#94A3B8' },
 
-  // TIP
   tipCard: {
     backgroundColor: '#E8F5E9', borderRadius: 12, padding: 12, marginBottom: 8,
     borderLeftWidth: 3, borderLeftColor: VERT,
   },
   tipTxt: { fontSize: 12, color: VERT, lineHeight: 18 },
 
-  // PHOTO NOTE
-  photoNote: {
-    backgroundColor: '#FFF7ED', borderRadius: 12, padding: 12, marginTop: 14,
-    borderLeftWidth: 3, borderLeftColor: ORANGE,
-  },
-  photoNoteTxt: { fontSize: 12, color: '#92400E', lineHeight: 18 },
-
-  // BOUTONS
   btn: {
     backgroundColor: VERT, borderRadius: 16, padding: 17,
     alignItems: 'center', marginTop: 22,
@@ -487,7 +548,6 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.5, shadowOpacity: 0, elevation: 0 },
   btnTxt: { color: BLANC, fontSize: 15, fontWeight: '800' },
 
-  // FOOTER
   footer: { alignItems: 'center', padding: 24 },
   footerTxt: { color: '#64748B', fontSize: 12, fontWeight: '600' },
   footerSub: { color: '#94A3B8', fontSize: 11, marginTop: 3, fontStyle: 'italic' },

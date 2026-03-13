@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import API from '../api/api';
+import API, { SERVER_URL } from '../api/api';
 
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
@@ -143,9 +143,16 @@ export default function CarteEtudiantScreen() {
             {/* CORPS */}
             <View style={styles.cardBody}>
               <View style={styles.photoBox}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarTxt}>{initiale}</Text>
-                </View>
+                {etudiant?.Image_Etudiant ? (
+                  <Image
+                    source={{ uri: `${SERVER_URL}${etudiant.Image_Etudiant}` }}
+                    style={styles.avatarPhoto}
+                  />
+                ) : (
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarTxt}>{initiale}</Text>
+                  </View>
+                )}
                 <View style={styles.matriculeBadge}>
                   <Text style={styles.matriculeTxt}>
                     {etudiant?.Matricule_Etudiant || 'N/A'}
@@ -342,6 +349,10 @@ const styles = StyleSheet.create({
     borderWidth: 2.5, borderColor: ORANGE,
   },
   avatarTxt: { color: BLANC, fontSize: 28, fontWeight: '900' },
+  avatarPhoto: {
+    width: 82, height: 82, borderRadius: 12,
+    borderWidth: 2.5, borderColor: ORANGE,
+  },
   matriculeBadge: {
     backgroundColor: VERT, borderRadius: 6,
     paddingHorizontal: 6, paddingVertical: 3, maxWidth: 85,
