@@ -8,6 +8,9 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from '../api/api';
 
+const VERT   = '#2E7D32';
+const ORANGE = '#D84315';
+
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
@@ -313,16 +316,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, shadowRadius: 16,
   },
   drawerHeader: {
-    backgroundColor: '#0F172A', padding: 24, paddingTop: 52, alignItems: 'center',
+    backgroundColor: VERT, padding: 24, paddingTop: 52, alignItems: 'center',
   },
   drawerAvatar: {
-    width: 76, height: 76, borderRadius: 38, backgroundColor: '#2563EB',
+    width: 76, height: 76, borderRadius: 38, backgroundColor: ORANGE,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 3, borderColor: '#60A5FA', marginBottom: 12,
   },
   drawerAvatarTxt: { color: '#fff', fontSize: 30, fontWeight: '800' },
   drawerNom: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
-  drawerRole: { color: '#60A5FA', fontSize: 13, marginTop: 4 },
+  drawerRole: { color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4 },
   drawerEmail: { color: '#64748B', fontSize: 12, marginTop: 3 },
   drawerItems: { flex: 1, paddingVertical: 8 },
   drawerItem: {
@@ -352,7 +355,7 @@ const styles = StyleSheet.create({
 
   // HEADER
   header: {
-    backgroundColor: '#0F172A',
+    backgroundColor: VERT,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + 12,
@@ -366,7 +369,7 @@ const styles = StyleSheet.create({
   notifIcon: { fontSize: 22 },
   notifBadge: {
     position: 'absolute', top: 5, right: 5,
-    backgroundColor: '#EF4444', minWidth: 17, height: 17,
+    backgroundColor: ORANGE, minWidth: 17, height: 17,
     borderRadius: 9, justifyContent: 'center', alignItems: 'center',
     paddingHorizontal: 3, borderWidth: 1.5, borderColor: '#0F172A',
   },
@@ -374,7 +377,7 @@ const styles = StyleSheet.create({
 
   // HERO
   hero: {
-    backgroundColor: '#0F172A',
+    backgroundColor: VERT,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingBottom: 32,
     borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
@@ -383,13 +386,13 @@ const styles = StyleSheet.create({
   heroSalut: { color: '#94A3B8', fontSize: 14 },
   heroNom: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 4 },
   heroRoleBadge: {
-    backgroundColor: 'rgba(37,99,235,0.3)', paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12,
     paddingVertical: 5, borderRadius: 20, alignSelf: 'flex-start', marginTop: 8,
-    borderWidth: 1, borderColor: 'rgba(96,165,250,0.4)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
   },
-  heroRoleTxt: { color: '#60A5FA', fontSize: 13, fontWeight: '600' },
+  heroRoleTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
   heroAvatar: {
-    width: 52, height: 52, borderRadius: 26, backgroundColor: '#2563EB',
+    width: 52, height: 52, borderRadius: 26, backgroundColor: ORANGE,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2.5, borderColor: '#60A5FA',
   },
@@ -454,8 +457,9 @@ const styles = StyleSheet.create({
 
   // INFO CARD
   infoCard: {
-    backgroundColor: '#0F172A', margin: 16, borderRadius: 20, padding: 20,
+    backgroundColor: VERT, margin: 16, borderRadius: 20, padding: 20,
     alignItems: 'center', elevation: 8,
+    borderWidth: 2, borderColor: ORANGE,
   },
   infoCardTitre: { color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' },
   infoCardSub: { color: '#94A3B8', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
@@ -469,7 +473,7 @@ const styles = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute', bottom: 28, right: 20,
-    backgroundColor: '#2563EB', borderRadius: 32,
+    backgroundColor: ORANGE, borderRadius: 32,
     paddingHorizontal: 18, paddingVertical: 14,
     flexDirection: 'row', alignItems: 'center', elevation: 10,
     shadowColor: '#2563EB', shadowOffset: { width: 0, height: 6 },
