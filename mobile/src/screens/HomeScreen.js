@@ -1,234 +1,198 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Alert, Platform, StatusBar,
-  Animated, Dimensions, RefreshControl, Image
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Alert, Platform, StatusBar, Animated, RefreshControl,
+  Image, ActivityIndicator
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API, { SERVER_URL } from '../api/api';
 
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
-
-const { width } = Dimensions.get('window');
+const JOURS  = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 
 export default function HomeScreen({ navigation }) {
-  const [user, setUser] = useState(null);
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [stats, setStats] = useState({ notes: 0, absences: 0, paiements: 0 });
-  const [nonLus, setNonLus] = useState(0);
-  const [moyenneGen, setMoyenneGen] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const menuAnim = useRef(new Animated.Value(-300)).current;
-  const insets = useSafeAreaInsets();
+  const [user, setUser]           = useState(null);
+  const [stats, setStats]         = useState({ notes: 0, absences: 0, paiements: 0 });
+  const [moyenneGen, setMoyenne]  = useState(null);
+  const [coursJour, setCoursJour] = useState([]);
+  const [refreshing, setRefresh]  = useState(false);
+  const [menuVisible, setMenu]    = useState(false);
+  const menuAnim = useRef(new Animated.Value(-280)).current;
+  const insets   = useSafeAreaInsets();
 
   useEffect(() => {
-    loadUser();
-    const unsubscribe = navigation.addListener('focus', loadUser);
-    return unsubscribe;
+    loadAll();
+    const unsub = navigation.addListener('focus', loadAll);
+    return unsub;
   }, [navigation]);
 
- const loadUser = async () => {
-  try {
-    const stored = await AsyncStorage.getItem('user');
-    if (stored) {
+  const loadAll = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('user');
+      if (!stored) return;
       const u = JSON.parse(stored);
       setUser(u);
-      loadStats(u);
-      loadNonLus(u);
-      // Recharger la photo depuis l'API à chaque focus
+
+      // Recharger photo depuis API
       try {
         const res = await API.get(`/etudiants/profil/${u.Id_UTILISATEUR}`);
         if (res.data?.Image_Etudiant) {
-          const updatedUser = { ...u, Image_Etudiant: res.data.Image_Etudiant };
-          await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-          setUser(updatedUser);
+          const updated = { ...u, Image_Etudiant: res.data.Image_Etudiant };
+          await AsyncStorage.setItem('user', JSON.stringify(updated));
+          setUser(updated);
         }
-      } catch (e) {}
-    }
-  } catch (e) {}
-};
+      } catch (_) {}
 
-  const loadStats = async (u) => {
-    try {
-      const [notesRes, absRes, paiRes] = await Promise.allSettled([
+      const [notesR, absR, paiR, emploiR] = await Promise.allSettled([
         API.get(`/evaluations/${u.Id_UTILISATEUR}/notes`),
         API.get(`/absences/etudiant/${u.Id_UTILISATEUR}`),
         API.get(`/versements/etudiant/${u.Id_UTILISATEUR}`),
+        API.get(`/emploiTemps/etudiant/${u.Id_UTILISATEUR}`),
       ]);
-      const notes = notesRes.status === 'fulfilled' ? notesRes.value.data : [];
+
+      const notes  = notesR.status  === 'fulfilled' ? notesR.value.data  : [];
+      const emploi = emploiR.status === 'fulfilled' ? emploiR.value.data : [];
+
       if (notes.length > 0) {
         const total = notes.reduce((s, n) => s + parseFloat(n.Note_Evaluation || 0), 0);
-        setMoyenneGen((total / notes.length).toFixed(2));
-      }
+        setMoyenne((total / notes.length).toFixed(2));
+      } else setMoyenne(null);
+
+      const jourNow = JOURS[new Date().getDay()];
+      setCoursJour(emploi.filter(c => c.Jour_Semaine === jourNow)
+        .sort((a, b) => (a.Heure_Debut || '').localeCompare(b.Heure_Debut || '')));
+
       setStats({
         notes: notes.length,
-        absences: absRes.status === 'fulfilled' ? absRes.value.data.absences?.length || 0 : 0,
-        paiements: paiRes.status === 'fulfilled' ? paiRes.value.data.paiements?.length || 0 : 0,
+        absences: absR.status === 'fulfilled' ? absR.value.data?.absences?.length || 0 : 0,
+        paiements: paiR.status === 'fulfilled' ? paiR.value.data?.paiements?.length || 0 : 0,
       });
-    } catch (e) {}
+    } catch (_) {}
   };
 
-  const loadNonLus = async (u) => {
-    try {
-      const res = await API.get(`/notifications/user/${u.Id_UTILISATEUR}`);
-      setNonLus(res.data.filter(n => !n.Lu).length);
-    } catch (e) {}
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadUser();
-    setRefreshing(false);
-  };
+  const onRefresh = async () => { setRefresh(true); await loadAll(); setRefresh(false); };
 
   const toggleMenu = () => {
     if (menuVisible) {
-      Animated.timing(menuAnim, { toValue: -300, duration: 280, useNativeDriver: true }).start(() => setMenuVisible(false));
+      Animated.timing(menuAnim, { toValue: -280, duration: 260, useNativeDriver: true }).start(() => setMenu(false));
     } else {
-      setMenuVisible(true);
-      Animated.timing(menuAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start();
+      setMenu(true);
+      Animated.timing(menuAnim, { toValue: 0, duration: 260, useNativeDriver: true }).start();
     }
   };
 
-  const handleLogout = async () => {
+  const goTo = (screen) => { toggleMenu(); setTimeout(() => navigation.navigate(screen), 280); };
+
+  const logout = () => {
     toggleMenu();
-    setTimeout(async () => {
-      const doLogout = async () => {
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
-        navigation.replace('Login');
-      };
-      if (Platform.OS === 'web') {
-        if (window.confirm('Voulez-vous vous déconnecter ?')) doLogout();
-      } else {
-        Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Déconnexion', style: 'destructive', onPress: doLogout }
-        ]);
-      }
+    setTimeout(() => {
+      Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Déconnexion', style: 'destructive', onPress: async () => {
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+          navigation.replace('Login');
+        }},
+      ]);
     }, 300);
   };
 
-  const navigateTo = (screen) => {
-    toggleMenu();
-    setTimeout(() => navigation.navigate(screen), 300);
+  const getMention = (m) => {
+    if (!m) return null;
+    const v = parseFloat(m);
+    if (v >= 16) return { txt: '🏆 Très Bien', color: '#065F46', bg: '#D1FAE5' };
+    if (v >= 14) return { txt: '⭐ Bien', color: '#065F46', bg: '#D1FAE5' };
+    if (v >= 12) return { txt: '👍 Assez Bien', color: '#92400E', bg: '#FEF3C7' };
+    if (v >= 10) return { txt: '✅ Passable', color: '#92400E', bg: '#FEF3C7' };
+    return { txt: '⚠️ Insuffisant', color: '#991B1B', bg: '#FEE2E2' };
   };
 
-  const initiale = user?.Nom_User?.charAt(0)?.toUpperCase() || 'E';
-  const heure = new Date().getHours();
-  const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
+  const mention   = getMention(moyenneGen);
+  const initiale  = user?.Nom_User?.charAt(0)?.toUpperCase() || 'E';
+  const heure     = new Date().getHours();
+  const salut     = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
+  const jourNow   = JOURS[new Date().getDay()];
 
   const menuItems = [
-    { icon: '📝', label: 'Mes Notes', screen: 'Notes', color: '#EFF6FF' },
-    { icon: '📅', label: 'Mes Absences', screen: 'Absences', color: '#FFF7ED' },
-    { icon: '💰', label: 'Mes Paiements', screen: 'Paiements', color: '#F0FDF4' },
-    { icon: '🕐', label: 'Emploi du Temps', screen: 'EmploiTemps', color: '#FDF4FF' },
-    { icon: '🔔', label: 'Notifications', screen: 'Notifications', color: '#FFF1F2', badge: nonLus },
-    { icon: '🪪', label: 'Ma Carte Scolaire', screen: 'Carte', color: '#FFFBEB' },
-    { icon: '👤', label: 'Mon Profil', screen: 'Profil', color: '#F0F9FF' },
-    { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot', color: '#F5F3FF' },
-  ];
-
-  const quickActions = [
-    { icon: '📝', label: 'Notes', screen: 'Notes', bg: '#2563EB' },
-    { icon: '📅', label: 'Absences', screen: 'Absences', bg: '#F59E0B' },
-    { icon: '💰', label: 'Paiements', screen: 'Paiements', bg: '#10B981' },
-    { icon: '🕐', label: 'Emploi', screen: 'EmploiTemps', bg: '#8B5CF6' },
+    { icon: '📝', label: 'Mes Notes',        screen: 'Notes' },
+    { icon: '📅', label: 'Mes Absences',     screen: 'Absences' },
+    { icon: '💰', label: 'Mes Paiements',    screen: 'Paiements' },
+    { icon: '🔔', label: 'Notifications',    screen: 'Notifications' },
+    { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
+    { icon: '🪪', label: 'Carte Scolaire',   screen: 'Carte' },
+     { icon: 'ℹ️',  label: 'À propos de CESA', screen: 'APropos' },
   ];
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 16 }]}>
+    <View style={styles.wrapper}>
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
 
+      {/* OVERLAY MENU */}
       {menuVisible && (
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={toggleMenu} />
       )}
 
-      {/* DRAWER */}
+      {/* DRAWER GAUCHE */}
       <Animated.View style={[styles.drawer, { transform: [{ translateX: menuAnim }] }]}>
-        <View style={styles.drawerHeader}>
-          {/* AVATAR DRAWER avec photo */}
+        <View style={styles.drawerHead}>
           {user?.Image_Etudiant ? (
-            <Image
-              source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }}
-              style={styles.drawerAvatarImg}
-            />
+            <Image source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }} style={styles.drawerAvImg} />
           ) : (
-            <View style={styles.drawerAvatar}>
-              <Text style={styles.drawerAvatarTxt}>{initiale}</Text>
-            </View>
+            <View style={styles.drawerAv}><Text style={styles.drawerAvTxt}>{initiale}</Text></View>
           )}
           <Text style={styles.drawerNom}>{user?.Nom_User || 'Étudiant'}</Text>
-          <Text style={styles.drawerRole}>{user?.Lib_Role || ''}</Text>
-          <Text style={styles.drawerEmail}>{user?.Email_User || ''}</Text>
+          <Text style={styles.drawerRole}>{user?.Lib_Role || 'Étudiant'}</Text>
         </View>
-
-        <ScrollView style={styles.drawerItems} showsVerticalScrollIndicator={false}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.drawerItem} onPress={() => navigateTo(item.screen)}>
-              <View style={[styles.drawerIconBox, { backgroundColor: item.color }]}>
-                <Text style={styles.drawerItemIcon}>{item.icon}</Text>
-              </View>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          {menuItems.map((item) => (
+            <TouchableOpacity key={item.screen} style={styles.drawerItem} onPress={() => goTo(item.screen)}>
+              <Text style={styles.drawerItemIcon}>{item.icon}</Text>
               <Text style={styles.drawerItemLabel}>{item.label}</Text>
-              {item.badge > 0 && (
-                <View style={styles.drawerBadge}>
-                  <Text style={styles.drawerBadgeTxt}>{item.badge}</Text>
-                </View>
-              )}
-              <Text style={styles.drawerItemArrow}>›</Text>
+              <Text style={styles.drawerArrow}>›</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-
-        <TouchableOpacity style={styles.drawerLogout} onPress={handleLogout}>
-          <Text style={styles.drawerLogoutIcon}>🚪</Text>
-          <Text style={styles.drawerLogoutTxt}>Se déconnecter</Text>
+        <TouchableOpacity style={styles.drawerLogout} onPress={logout}>
+          <Text style={styles.drawerLogoutTxt}>🚪 Se déconnecter</Text>
         </TouchableOpacity>
       </Animated.View>
 
+      {/* HEADER */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity onPress={toggleMenu} style={styles.menuBtn}>
+          <View style={styles.hamburger}>
+            <View style={styles.hLine} />
+            <View style={[styles.hLine, { width: 16 }]} />
+            <View style={styles.hLine} />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>MyCESA</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.menuBtn}>
+          <Text style={{ fontSize: 22 }}>🔔</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* CONTENU */}
       <ScrollView
-        style={styles.container}
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={VERT} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[VERT]} />}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 90 }}
       >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.menuBtn} onPress={toggleMenu}>
-            <View style={styles.hamburger}>
-              <View style={styles.hamburgerLine} />
-              <View style={[styles.hamburgerLine, { width: 16 }]} />
-              <View style={styles.hamburgerLine} />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>MyCESA</Text>
-          <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.notifIcon}>🔔</Text>
-            {nonLus > 0 && (
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeTxt}>{nonLus > 9 ? '9+' : nonLus}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* HERO */}
+        {/* HERO SALUTATION */}
         <View style={styles.hero}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroSalut}>{salutation} 👋</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroSalut}>{salut} 👋</Text>
             <Text style={styles.heroNom}>{user?.Nom_User || 'Étudiant'}</Text>
-            <View style={styles.heroRoleBadge}>
-              <Text style={styles.heroRoleTxt}>🎓 {user?.Lib_Role || 'Étudiant'}</Text>
-            </View>
           </View>
-          <TouchableOpacity style={styles.heroAvatar} onPress={() => navigation.navigate('Profil')}>
+          <TouchableOpacity
+            style={styles.heroAvatar}
+            onPress={() => navigation.navigate('Profil')}
+          >
             {user?.Image_Etudiant ? (
-              <Image
-                source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }}
-                style={styles.heroAvatarImg}
-              />
+              <Image source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }} style={styles.heroAvatarImg} />
             ) : (
               <Text style={styles.heroAvatarTxt}>{initiale}</Text>
             )}
@@ -236,277 +200,221 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* CARTE MOYENNE */}
-        {moyenneGen && (
-          <View style={styles.moyenneCard}>
-            <View style={styles.moyenneLeft}>
-              <Text style={styles.moyenneLabel}>Moyenne Générale</Text>
-              <Text style={styles.moyenneVal}>{moyenneGen}<Text style={styles.moyenneSur}>/20</Text></Text>
-            </View>
-            <View style={styles.moyenneRight}>
-              <View style={[styles.moyenneBadge, {
-                backgroundColor: parseFloat(moyenneGen) >= 14 ? '#D1FAE5' : parseFloat(moyenneGen) >= 10 ? '#FEF3C7' : '#FEE2E2'
-              }]}>
-                <Text style={[styles.moyenneBadgeTxt, {
-                  color: parseFloat(moyenneGen) >= 14 ? '#065F46' : parseFloat(moyenneGen) >= 10 ? '#92400E' : '#991B1B'
-                }]}>
-                  {parseFloat(moyenneGen) >= 14 ? '⭐ Excellent' : parseFloat(moyenneGen) >= 10 ? '👍 Passable' : '⚠️ Insuffisant'}
-                </Text>
-              </View>
-            </View>
+        <View style={styles.moyenneCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.moyenneLabel}>Moyenne Générale</Text>
+            <Text style={styles.moyenneVal}>
+              {moyenneGen || '--'}<Text style={styles.moyenneSur}>/20</Text>
+            </Text>
           </View>
-        )}
-
-        {/* ACCÈS RAPIDE */}
-        <Text style={styles.sectionTitre}>Accès Rapide</Text>
-        <View style={styles.quickGrid}>
-          {quickActions.map((item, i) => (
-            <TouchableOpacity key={i} style={[styles.quickCard, { backgroundColor: item.bg }]} onPress={() => navigation.navigate(item.screen)}>
-              <Text style={styles.quickIcon}>{item.icon}</Text>
-              <Text style={styles.quickLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {mention && (
+            <View style={[styles.mentionBadge, { backgroundColor: mention.bg }]}>
+              <Text style={[styles.mentionTxt, { color: mention.color }]}>{mention.txt}</Text>
+            </View>
+          )}
         </View>
 
-        {/* STATS */}
-        <Text style={styles.sectionTitre}>Mes Statistiques</Text>
-        <View style={styles.statsRow}>
-          <TouchableOpacity style={[styles.statCard, { borderLeftColor: '#2563EB' }]} onPress={() => navigation.navigate('Notes')}>
-            <Text style={styles.statIcon}>📝</Text>
-            <View>
+        {/* COURS DU JOUR */}
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitre}>📅 Cours du jour — {jourNow}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('EmploiTemps')}>
+              <Text style={styles.voirTout}>Voir tout ›</Text>
+            </TouchableOpacity>
+          </View>
+          {coursJour.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTxt}>Aucun cours prévu aujourd'hui 🎉</Text>
+            </View>
+          ) : (
+            coursJour.map((cours, i) => (
+              <View key={i} style={styles.coursCard}>
+                <View style={styles.coursHeureBadge}>
+                  <Text style={styles.coursHeureDebut}>{cours.Heure_Debut || '--:--'}</Text>
+                  <Text style={styles.coursHeureSep}>|</Text>
+                  <Text style={styles.coursHeureFin}>{cours.Heure_Fin || '--:--'}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.coursMatiere}>{cours.Lib_Matiere || cours.Lib_Cours || 'Cours'}</Text>
+                  <Text style={styles.coursSalle}>📍 {cours.Salle || 'Salle non définie'}</Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* STATISTIQUES */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitre}>📊 Mes Statistiques</Text>
+          <View style={styles.statsRow}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#2563EB' }]} onPress={() => navigation.navigate('Notes')}>
+              <Text style={styles.statIcon}>📝</Text>
               <Text style={styles.statVal}>{stats.notes}</Text>
               <Text style={styles.statLbl}>Évaluations</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.statCard, { borderLeftColor: '#F59E0B' }]} onPress={() => navigation.navigate('Absences')}>
-            <Text style={styles.statIcon}>📅</Text>
-            <View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: ORANGE }]} onPress={() => navigation.navigate('Absences')}>
+              <Text style={styles.statIcon}>📅</Text>
               <Text style={styles.statVal}>{stats.absences}</Text>
               <Text style={styles.statLbl}>Absences</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.statCard, { borderLeftColor: '#10B981' }]} onPress={() => navigation.navigate('Paiements')}>
-            <Text style={styles.statIcon}>💰</Text>
-            <View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#10B981' }]} onPress={() => navigation.navigate('Paiements')}>
+              <Text style={styles.statIcon}>💰</Text>
               <Text style={styles.statVal}>{stats.paiements}</Text>
               <Text style={styles.statLbl}>Paiements</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* CARTE SCOLAIRE RAPIDE */}
-        <TouchableOpacity style={styles.carteBtn} onPress={() => navigation.navigate('Carte')}>
-          <Text style={styles.carteBtnIcon}>🪪</Text>
-          <View>
-            <Text style={styles.carteBtnTitre}>Ma Carte Scolaire</Text>
-            <Text style={styles.carteBtnSub}>Voir ma carte virtuelle CESA</Text>
-          </View>
-          <Text style={styles.carteBtnArrow}>›</Text>
-        </TouchableOpacity>
-
-        {/* FOOTER INFO */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitre}>🎓 GROUPE COFE-CESA</Text>
-          <Text style={styles.infoCardSub}>Une excellence à votre service !</Text>
-          <View style={styles.infoCardBadge}>
-            <Text style={styles.infoCardBadgeTxt}>● En ligne</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={{ height: 120 }} />
+        {/* ÉCOLE */}
+        <View style={styles.ecoleCard}>
+          <Text style={styles.ecoleTitre}>🎓 GROUPE COFE-CESA</Text>
+          <Text style={styles.ecoleSlogan}>Une excellence à votre service !</Text>
+        </View>
+
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('ChatBot')} activeOpacity={0.85}>
+      {/* FAB ASSISTANT */}
+      <TouchableOpacity
+        style={[styles.fab, { bottom: insets.bottom + 80 }]}
+        onPress={() => navigation.navigate('ChatBot')}
+        activeOpacity={0.85}
+      >
         <Text style={styles.fabIcon}>🤖</Text>
         <Text style={styles.fabTxt}>Assistant</Text>
       </TouchableOpacity>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: '#F8FAFF' },
-  container: { flex: 1 },
-  overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 10,
-  },
+  wrapper: { flex: 1, backgroundColor: '#F5F7F5' },
 
-  // DRAWER
+  // OVERLAY + DRAWER
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 },
   drawer: {
-    position: 'absolute', top: 0, left: 0, bottom: 0, width: 285,
+    position: 'absolute', top: 0, left: 0, bottom: 0, width: 280,
     backgroundColor: '#fff', zIndex: 20, elevation: 20,
-    shadowColor: '#000', shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.2, shadowRadius: 16,
+    shadowColor: '#000', shadowOffset: { width: 4, height: 0 }, shadowOpacity: 0.2,
   },
-  drawerHeader: {
-    backgroundColor: VERT, padding: 24, paddingTop: 52, alignItems: 'center',
-  },
-  drawerAvatar: {
-    width: 76, height: 76, borderRadius: 38, backgroundColor: ORANGE,
+  drawerHead: { backgroundColor: VERT, padding: 24, paddingTop: 52, alignItems: 'center' },
+  drawerAv: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: ORANGE,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: '#fff', marginBottom: 12,
+    borderWidth: 3, borderColor: '#fff', marginBottom: 10,
   },
-  drawerAvatarImg: {
-    width: 76, height: 76, borderRadius: 38,
-    borderWidth: 3, borderColor: '#fff', marginBottom: 12,
-  },
-  drawerAvatarTxt: { color: '#fff', fontSize: 30, fontWeight: '800' },
-  drawerNom: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
-  drawerRole: { color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4 },
-  drawerEmail: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 3 },
-  drawerItems: { flex: 1, paddingVertical: 8 },
+  drawerAvImg: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: '#fff', marginBottom: 10 },
+  drawerAvTxt: { color: '#fff', fontSize: 28, fontWeight: '900' },
+  drawerNom: { color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  drawerRole: { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 4 },
   drawerItem: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, paddingHorizontal: 16,
+    paddingVertical: 14, paddingHorizontal: 20,
     borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
   },
-  drawerIconBox: {
-    width: 36, height: 36, borderRadius: 10,
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  drawerItemIcon: { fontSize: 20, marginRight: 14 },
+  drawerItemLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1E293B' },
+  drawerArrow: { fontSize: 20, color: '#CBD5E1' },
+  drawerLogout: { padding: 20, borderTopWidth: 1, borderTopColor: '#F1F5F9', backgroundColor: '#FFF1F2' },
+  drawerLogoutTxt: { color: '#EF4444', fontSize: 15, fontWeight: '700', textAlign: 'center' },
+
+fab: {
+    position: 'absolute', right: 20,
+    backgroundColor: ORANGE, borderRadius: 32,
+    paddingHorizontal: 18, paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center',
+    elevation: 10,
+    shadowColor: ORANGE, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 12,
   },
-  drawerItemIcon: { fontSize: 18 },
-  drawerItemLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  drawerItemArrow: { fontSize: 20, color: '#CBD5E1' },
-  drawerBadge: {
-    backgroundColor: '#EF4444', minWidth: 20, height: 20,
-    borderRadius: 10, justifyContent: 'center', alignItems: 'center',
-    paddingHorizontal: 4, marginRight: 6,
-  },
-  drawerBadgeTxt: { color: '#fff', fontSize: 11, fontWeight: '800' },
-  drawerLogout: {
-    flexDirection: 'row', alignItems: 'center', padding: 18,
-    borderTopWidth: 1, borderTopColor: '#F1F5F9', backgroundColor: '#FFF1F2',
-  },
-  drawerLogoutIcon: { fontSize: 20, marginRight: 12 },
-  drawerLogoutTxt: { fontSize: 15, fontWeight: '700', color: '#EF4444' },
+  fabIcon: { fontSize: 20 },
+  fabTxt: { color: '#fff', fontSize: 14, fontWeight: '800', marginLeft: 8 },
 
   // HEADER
   header: {
     backgroundColor: VERT,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight || 24) + 12,
-    paddingBottom: 16,
+    paddingHorizontal: 16, paddingBottom: 16,
   },
   menuBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   hamburger: { gap: 5 },
-  hamburgerLine: { width: 22, height: 2.5, backgroundColor: '#fff', borderRadius: 2 },
+  hLine: { width: 22, height: 2.5, backgroundColor: '#fff', borderRadius: 2 },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: 1 },
-  notifBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  notifIcon: { fontSize: 22 },
-  notifBadge: {
-    position: 'absolute', top: 5, right: 5,
-    backgroundColor: ORANGE, minWidth: 17, height: 17,
-    borderRadius: 9, justifyContent: 'center', alignItems: 'center',
-    paddingHorizontal: 3, borderWidth: 1.5, borderColor: VERT,
-  },
-  notifBadgeTxt: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   // HERO
   hero: {
     backgroundColor: VERT,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 32,
-    borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingBottom: 28,
+    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
   },
-  heroContent: { flex: 1 },
-  heroSalut: { color: 'rgba(255,255,255,0.75)', fontSize: 14 },
-  heroNom: { color: '#fff', fontSize: 24, fontWeight: '900', marginTop: 4 },
-  heroRoleBadge: {
-    backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12,
-    paddingVertical: 5, borderRadius: 20, alignSelf: 'flex-start', marginTop: 8,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
-  },
-  heroRoleTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  heroSalut: { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
+  heroNom: { color: '#fff', fontSize: 22, fontWeight: '900', marginTop: 2 },
   heroAvatar: {
-    width: 52, height: 52, borderRadius: 26, backgroundColor: ORANGE,
+    width: 50, height: 50, borderRadius: 25, backgroundColor: ORANGE,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 2.5, borderColor: '#fff', overflow: 'hidden',
   },
   heroAvatarTxt: { color: '#fff', fontSize: 20, fontWeight: '900' },
-  heroAvatarImg: { width: 52, height: 52, borderRadius: 26 },
+  heroAvatarImg: { width: 50, height: 50, borderRadius: 25 },
 
   // MOYENNE
   moyenneCard: {
-    backgroundColor: '#fff', margin: 16, marginBottom: 0, borderRadius: 20,
-    padding: 18, flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', elevation: 4,
-    shadowColor: '#2563EB', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1, shadowRadius: 12,
-    borderWidth: 1, borderColor: '#EFF6FF',
+    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16,
+    borderRadius: 20, padding: 20,
+    flexDirection: 'row', alignItems: 'center',
+    elevation: 4, shadowColor: VERT,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10,
   },
-  moyenneLeft: {},
   moyenneLabel: { fontSize: 13, color: '#64748B', fontWeight: '600' },
-  moyenneVal: { fontSize: 36, fontWeight: '900', color: '#1E293B', marginTop: 2 },
+  moyenneVal: { fontSize: 40, fontWeight: '900', color: '#1E293B', marginTop: 2 },
   moyenneSur: { fontSize: 18, color: '#94A3B8', fontWeight: '600' },
-  moyenneRight: {},
-  moyenneBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  moyenneBadgeTxt: { fontSize: 13, fontWeight: '700' },
+  mentionBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
+  mentionTxt: { fontSize: 13, fontWeight: '800' },
 
-  sectionTitre: {
-    fontSize: 16, fontWeight: '800', color: '#1E293B',
-    marginHorizontal: 16, marginTop: 24, marginBottom: 12,
+  // SECTION
+  section: {
+    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 14,
+    borderRadius: 20, padding: 18,
+    elevation: 2, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06,
   },
+  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionTitre: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
+  voirTout: { color: VERT, fontSize: 13, fontWeight: '700' },
 
-  // QUICK ACTIONS
-  quickGrid: { flexDirection: 'row', paddingHorizontal: 12, gap: 10 },
-  quickCard: {
-    flex: 1, borderRadius: 18, padding: 16, alignItems: 'center',
-    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15, shadowRadius: 8,
+  // COURS
+  emptyBox: { backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14 },
+  emptyTxt: { color: VERT, fontWeight: '600', textAlign: 'center' },
+  coursCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#F8FAFC', borderRadius: 14, padding: 12, marginBottom: 8,
+    borderLeftWidth: 4, borderLeftColor: VERT,
   },
-  quickIcon: { fontSize: 28, marginBottom: 6 },
-  quickLabel: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  coursHeureBadge: { alignItems: 'center', minWidth: 52 },
+  coursHeureDebut: { fontSize: 13, fontWeight: '800', color: VERT },
+  coursHeureSep: { color: '#CBD5E1', fontSize: 10 },
+  coursHeureFin: { fontSize: 11, color: '#64748B' },
+  coursMatiere: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
+  coursSalle: { fontSize: 12, color: '#64748B', marginTop: 2 },
 
   // STATS
-  statsRow: { paddingHorizontal: 12, gap: 10 },
+  statsRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   statCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16,
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    elevation: 2, borderLeftWidth: 4, marginBottom: 10,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06,
+    flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, padding: 14,
+    alignItems: 'center', borderTopWidth: 3,
+    elevation: 1,
   },
-  statIcon: { fontSize: 28 },
-  statVal: { fontSize: 24, fontWeight: '900', color: '#1E293B' },
-  statLbl: { fontSize: 12, color: '#64748B', fontWeight: '600', marginTop: 2 },
+  statIcon: { fontSize: 24, marginBottom: 6 },
+  statVal: { fontSize: 26, fontWeight: '900', color: '#1E293B' },
+  statLbl: { fontSize: 11, color: '#64748B', fontWeight: '600', marginTop: 2, textAlign: 'center' },
 
-  // CARTE BTN
-  carteBtn: {
-    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 4,
-    borderRadius: 18, padding: 18, flexDirection: 'row', alignItems: 'center',
-    elevation: 3, borderWidth: 1.5, borderColor: '#E2E8F0',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08,
-  },
-  carteBtnIcon: { fontSize: 32, marginRight: 14 },
-  carteBtnTitre: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
-  carteBtnSub: { fontSize: 12, color: '#64748B', marginTop: 2 },
-  carteBtnArrow: { marginLeft: 'auto', fontSize: 24, color: '#CBD5E1' },
-
-  // INFO CARD
-  infoCard: {
-    backgroundColor: VERT, margin: 16, borderRadius: 20, padding: 20,
-    alignItems: 'center', elevation: 8,
+  // ÉCOLE
+  ecoleCard: {
+    backgroundColor: VERT, marginHorizontal: 16, marginTop: 14, marginBottom: 8,
+    borderRadius: 20, padding: 18, alignItems: 'center',
     borderWidth: 2, borderColor: ORANGE,
   },
-  infoCardTitre: { color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' },
-  infoCardSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
-  infoCardBadge: {
-    backgroundColor: 'rgba(16,185,129,0.2)', paddingHorizontal: 14,
-    paddingVertical: 6, borderRadius: 20, marginTop: 10,
-    borderWidth: 1, borderColor: 'rgba(16,185,129,0.4)',
-  },
-  infoCardBadgeTxt: { color: '#34D399', fontSize: 12, fontWeight: '700' },
-
-  // FAB
-  fab: {
-    position: 'absolute', bottom: 28, right: 20,
-    backgroundColor: ORANGE, borderRadius: 32,
-    paddingHorizontal: 18, paddingVertical: 14,
-    flexDirection: 'row', alignItems: 'center', elevation: 10,
-    shadowColor: ORANGE, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4, shadowRadius: 12,
-  },
-  fabIcon: { fontSize: 22 },
-  fabTxt: { color: '#fff', fontSize: 14, fontWeight: '800', marginLeft: 8 },
+  ecoleTitre: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ecoleSlogan: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 4, fontStyle: 'italic' },
 });

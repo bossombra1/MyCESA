@@ -35,7 +35,7 @@ export default function LoginScreen({ navigation }) {
       });
       await AsyncStorage.setItem('token', response.data.token);
       await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-      navigation.replace('Home');
+      navigation.replace('Main');
     } catch (error) {
       const msg = error.response?.data?.error || 'Problème réseau';
       if (Platform.OS === 'web') window.alert('Erreur de connexion : ' + msg);
