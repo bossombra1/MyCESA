@@ -28,6 +28,7 @@ app.use('/api/versements',    require('./routes/versements'));
 app.use('/api/emploiTemps',   require('./routes/emploiTemps'));
 app.use('/api/chatbot',       require('./routes/chatbot'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/recompenses',  require('./routes/recompenses'));
 app.use('/api/professeurs',   require('./routes/professeurs'));
 
 // Routes d'upload

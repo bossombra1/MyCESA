@@ -121,10 +121,12 @@ export default function HomeScreen({ navigation }) {
     { icon: '📝', label: 'Mes Notes',        screen: 'Notes' },
     { icon: '📅', label: 'Mes Absences',     screen: 'Absences' },
     { icon: '💰', label: 'Mes Paiements',    screen: 'Paiements' },
+
     { icon: '🔔', label: 'Notifications',    screen: 'Notifications' },
+        { icon: '🏆', label: 'Mes Récompenses',  screen: 'Recompenses' },
     { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
     { icon: '🪪', label: 'Carte Scolaire',   screen: 'Carte' },
-     { icon: 'ℹ️',  label: 'À propos de CESA', screen: 'APropos' },
+    { icon: 'ℹ️',  label: 'À propos de CESA', screen: 'APropos' },
   ];
 
   return (
