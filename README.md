@@ -1,166 +1,129 @@
-# 🎓 MyCESA — Application de Gestion Scolaire
+# 🎓 MyCESA — Application Mobile GROUPE COFE-CESA
 
-> Application complète de gestion scolaire avec backend REST API, application mobile React Native et interface web admin.
+> *« Une excellence à votre service ! »*
 
----
-
-## 📌 État du projet
-
-| Module | Statut |
-|--------|--------|
-| ✅ Backend API REST | **Terminé** |
-| ✅ App Mobile (React Native + Expo) | **En cours** |
-| 🔄 Interface Web Admin (React) | **À venir** |
+![Version](https://img.shields.io/badge/version-1.0.0-green)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-blue)
+![Stack](https://img.shields.io/badge/stack-React%20Native%20%7C%20Node.js%20%7C%20MySQL-orange)
 
 ---
 
-## 🛠️ Prérequis — Logiciels à installer
+## 📱 Présentation
 
-Chaque collaborateur doit installer les logiciels suivants **dans cet ordre** :
-
-### 1. Node.js v20 LTS
-- Télécharger sur : https://nodejs.org
-- Choisir **LTS (Long Term Support)**
-- Vérifier l'installation : `node -v` → doit afficher `v20.x.x`
-
-### 2. Git
-- Télécharger sur : https://git-scm.com
-- Vérifier : `git -v`
-
-### 3. WampServer (pour la base de données MySQL)
-- Télécharger sur : https://www.wampserver.com
-- Lancer WampServer → icône doit être **verte**
-- Accéder à phpMyAdmin : http://localhost/phpmyadmin
-
-### 4. VS Code (éditeur recommandé)
-- Télécharger sur : https://code.visualstudio.com
-- Extensions recommandées :
-  - **ES7+ React/Redux/React-Native snippets**
-  - **Prettier - Code formatter**
-  - **GitLens**
-  - **REST Client** (pour tester l'API)
-
-### 5. Postman (pour tester l'API)
-- Télécharger sur : https://www.postman.com
-
-### 6. Expo Go (sur téléphone Android/iOS)
-- Android : https://play.google.com/store/apps/details?id=host.exp.exponent
-- iOS : https://apps.apple.com/app/expo-go/id982107779
-- ⚠️ **Version requise : SDK 54**
+**MyCESA** est une application mobile de gestion scolaire développée pour les étudiants du **GROUPE COFE-CESA** (Abidjan, Côte d'Ivoire). Elle permet aux étudiants de suivre en temps réel leurs notes, absences, paiements, emploi du temps et bien plus encore.
 
 ---
 
-## 🚀 Installation du projet
+## ✨ Fonctionnalités
 
-### Étape 1 — Cloner le projet
+### 📊 Tableau de Bord
+- Moyenne générale + mention
+- Cours du jour en temps réel
+- Statistiques (évaluations, absences, paiements)
+- Menu latéral avec accès rapide
 
-```bash
-git clone https://github.com/bossombra1/MyCESA.git
-cd MyCESA
-```
+### 📝 Notes & Évaluations
+- Liste complète des notes par semestre
+- Barre de progression par note
+- Filtres par semestre
+- Moyenne générale calculée automatiquement
 
-### Étape 2 — Configurer la base de données
+### 📅 Absences
+- Suivi des absences justifiées/non justifiées
+- Alertes intelligentes
+- Contact scolarité intégré
 
-1. Ouvre **phpMyAdmin** → http://localhost/phpmyadmin
-2. Crée une base de données nommée **`mycesa_db`** (encodage : `utf8mb4_unicode_ci`)
-3. Importe le fichier SQL :
-   - Clique sur `mycesa_db` → **Importer**
-   - Sélectionne le fichier `backend/database/schema.sql`
-   - Clique sur **Exécuter**
+### 💰 Paiements
+- Historique des versements
+- Barre de progression de la scolarité
+- Statut en temps réel
 
-### Étape 3 — Configurer le Backend
+### 🕐 Emploi du Temps
+- Vue Jour / Semaine / Mois / Année
+- Calendrier interactif
+- Filtrage par date réelle
+- Navigation semaine par semaine
 
-```bash
-cd backend
-npm install
-```
+### ⏳ Échéances & Examens
+- Compte à rebours en temps réel
+- Calendrier des examens
+- Filtres par type (examen, devoir, soutenance...)
+- Alertes d'urgence
 
-Crée un fichier `.env` dans le dossier `backend/` :
+### 🏆 Récompenses & Points
+- Système de points basé sur les performances
+- 6 niveaux (Novice → Élite)
+- Streak de connexion journalière
+- Historique des points gagnés
 
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=mycesa_db
-DB_PORT=3306
-JWT_SECRET=mycesa_super_secret_key_2026_CHANGE_MOI
-PORT=3000
-```
+### 🏅 Classement
+- Leaderboard des étudiants
+- Podium Top 3
+- Classement par points
 
-Lance le backend :
+### 🤖 Assistant MyCESA (ChatBot)
+- Questions sur les notes, absences, paiements
+- Navigation automatique vers les sections
+- Interface conversationnelle
 
-```bash
-npm run dev
-```
+### 🔔 Notifications
+- Notifications locales
+- Marquage lu/non lu
+- Catégorisation par type
 
-✅ Le backend tourne sur : http://localhost:3000
+### 👤 Profil Étudiant
+- Photo de profil (upload)
+- Modification informations personnelles
+- Changement de mot de passe
+- Mode sombre / clair
 
-### Étape 4 — Configurer l'App Mobile
+### 🪪 Carte Scolaire Virtuelle
+- Carte étudiant avec animation flip 3D
+- Logo CESA officiel
+- Informations académiques complètes
 
-```bash
-cd ../mobile
-npm install --legacy-peer-deps
-```
-
-⚠️ **Important** : Trouve ton adresse IP WiFi :
-
-```bash
-ipconfig
-```
-
-Cherche **Adresse IPv4** sous **Carte réseau sans fil Wi-Fi** (exemple : `192.168.1.69`)
-
-Ouvre le fichier `mobile/src/api/api.js` et remplace l'IP :
-
-```javascript
-const BASE_URL = 'http://TON_IP:3000/api';
-```
-
-Lance l'app mobile :
-
-```bash
-# PowerShell
-$env:REACT_NATIVE_PACKAGER_HOSTNAME="TON_IP"
-npx expo start -c --lan
-
-# Si le téléphone est connecté via point d'accès PC
-$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.137.1"
-npx expo start -c --lan
-```
-
-Scanne le QR code avec **Expo Go** sur ton téléphone.
+### ℹ️ À propos de CESA
+- Historique du groupe
+- Contacts officiels
+- Lien vers le site web
 
 ---
 
-## 🔄 Lancer le projet chaque jour
+## 🛠️ Stack Technique
 
-### Terminal 1 — Backend :
-```bash
-cd backend
-npm run dev
-```
+### Mobile
+| Technologie | Version |
+|-------------|---------|
+| React Native | SDK 54 |
+| Expo Go | Latest |
+| React Navigation | v6 |
+| Axios | Latest |
+| AsyncStorage | Latest |
+| expo-image-picker | Latest |
+| expo-linear-gradient | Latest |
 
-### Terminal 2 — Mobile :
-```bash
-cd mobile
-$env:REACT_NATIVE_PACKAGER_HOSTNAME="TON_IP"
-npx expo start --lan
-```
+### Backend
+| Technologie | Version |
+|-------------|---------|
+| Node.js | v24 |
+| Express.js | Latest |
+| MySQL | v8 (WampServer) |
+| JWT | Latest |
+| Socket.io | Latest |
+| Multer | Latest |
+| Bcrypt | Latest |
 
 ---
 
-## 📁 Structure du projet
-
+## 🗄️ Structure du Projet
 ```
 MyCESA/
-├── backend/                    # API REST Node.js + Express
+├── backend/
 │   ├── config/
-│   │   └── db.js              # Connexion MySQL
-│   ├── database/
-│   │   └── schema.sql         # Structure + données initiales
+│   │   └── db.js
 │   ├── middleware/
-│   │   └── authMiddleware.js  # Vérification JWT
-│   ├── routes/                # Toutes les routes API
+│   │   └── authMiddleware.js
+│   ├── routes/
 │   │   ├── auth.js
 │   │   ├── etudiants.js
 │   │   ├── classes.js
@@ -168,100 +131,151 @@ MyCESA/
 │   │   ├── absences.js
 │   │   ├── versements.js
 │   │   ├── emploiTemps.js
-│   │   ├── chatbot.js
 │   │   ├── notifications.js
-│   │   └── professeurs.js
-│   ├── server.js              # Point d'entrée du serveur
-│   ├── package.json
-│   └── .env                   # Variables d'environnement (non versionné)
+│   │   ├── chatbot.js
+│   │   ├── recompenses.js
+│   │   ├── evenements.js
+│   │   └── upload.js
+│   ├── uploads/
+│   │   └── photos/
+│   └── server.js
 │
-├── mobile/                    # App React Native + Expo
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── api.js         # Configuration Axios
-│   │   ├── context/
-│   │   │   └── AuthContext.js # Contexte authentification
-│   │   ├── navigation/
-│   │   │   └── AppNavigator.js
-│   │   ├── screens/           # Tous les écrans
-│   │   │   ├── LoginScreen.js
-│   │   │   ├── HomeScreen.js
-│   │   │   ├── NotesScreen.js
-│   │   │   ├── AbsencesScreen.js
-│   │   │   ├── PaiementsScreen.js
-│   │   │   ├── EmploiTempsScreen.js
-│   │   │   └── ChatBotScreen.js
-│   │   └── components/
-│   │       ├── Header.js
-│   │       └── LoadingSpinner.js
-│   ├── App.js
-│   ├── app.json
-│   └── package.json
-│
-└── web-admin/                 # Interface Admin React (à venir)
+└── mobile/
+    ├── assets/
+    │   └── logo cesa.jpg
+    ├── src/
+    │   ├── api/
+    │   │   └── api.js
+    │   ├── context/
+    │   │   ├── AuthContext.js
+    │   │   └── ThemeContext.js
+    │   ├── navigation/
+    │   │   └── AppNavigator.js
+    │   ├── screens/
+    │   │   ├── SplashAnimScreen.js
+    │   │   ├── LoginScreen.js
+    │   │   ├── HomeScreen.js
+    │   │   ├── NotesScreen.js
+    │   │   ├── AbsencesScreen.js
+    │   │   ├── PaiementsScreen.js
+    │   │   ├── EmploiTempsScreen.js
+    │   │   ├── ChatBotScreen.js
+    │   │   ├── NotificationsScreen.js
+    │   │   ├── ProfilScreen.js
+    │   │   ├── CarteEtudiantScreen.js
+    │   │   ├── RecompensesScreen.js
+    │   │   ├── LeaderboardScreen.js
+    │   │   ├── EvenementsScreen.js
+    │   │   └── AProposScreen.js
+    │   └── utils/
+    │       └── notifications.js
+    └── App.js
 ```
 
 ---
 
-## 🔑 API — Routes disponibles
+## 🚀 Installation & Lancement
 
-| Route | Méthodes | Description |
-|-------|----------|-------------|
-| `/api/auth` | POST /register, POST /login, GET /me | Authentification |
-| `/api/etudiants` | GET, POST, PUT, DELETE | Gestion étudiants |
-| `/api/classes` | GET, POST, PUT, DELETE | Gestion classes |
-| `/api/evaluations` | GET, POST, PUT, DELETE | Notes et évaluations |
-| `/api/absences` | GET, POST, PUT | Suivi absences |
-| `/api/versements` | GET, POST | Paiements scolarité |
-| `/api/emploiTemps` | GET, POST, DELETE | Emploi du temps |
-| `/api/chatbot` | POST /ask, GET /historique | Assistant IA |
-| `/api/notifications` | GET, POST, PUT | Notifications |
-| `/api/professeurs` | GET, POST, PUT, DELETE | Gestion professeurs |
+### Prérequis
+- Node.js v18+
+- WampServer (MySQL)
+- Expo Go sur Android/iOS
+- npm
 
----
-
-## 👤 Compte de test
-
-```
-Login    : admin
-Password : admin123
-Rôle     : Administrateur
-```
-
----
-
-## 🌿 Workflow Git (collaboration)
-
+### Backend
 ```bash
-# Avant de commencer à travailler
-git pull origin main
+cd backend
+npm install
+npm run dev
+```
 
-# Créer une branche pour ta fonctionnalité
-git checkout -b feature/nom-de-la-fonctionnalite
+### Mobile
+```bash
+cd mobile
+npm install
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.137.1"
+npx expo start -c --lan
+```
 
-# Après avoir codé
-git add .
-git commit -m "feat: description de ce que tu as fait"
-git push origin feature/nom-de-la-fonctionnalite
+### Variables d'environnement Backend (`.env`)
+```env
+PORT=3000
+JWT_SECRET=votre_secret_jwt
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=mycesa
+```
 
-# Puis faire une Pull Request sur GitHub
+### Configuration API Mobile (`src/api/api.js`)
+```javascript
+export const SERVER_URL = 'http://192.168.137.1:3000';
+const BASE_URL = `${SERVER_URL}/api`;
 ```
 
 ---
 
-## 👥 Équipe
+## 🗃️ Base de Données
 
-| Nom | Rôle | GitHub |
-|-----|------|--------|
-| Regis | Lead Developer | @bossombra1 |
-| ... | ... | ... |
+### Tables principales
+| Table | Description |
+|-------|-------------|
+| UTILISATEUR | Comptes utilisateurs |
+| ETUDIANT | Informations étudiants |
+| CLASSE | Classes |
+| FILIERE | Filières |
+| MATIERE | Matières |
+| PROFESSEUR | Professeurs |
+| SALLE | Salles de cours |
+| EMPLOI_TEMPS | Emploi du temps |
+| EVALUATION | Notes et évaluations |
+| ABSENCE | Absences |
+| VERSEMENT | Paiements |
+| NOTIFICATION | Notifications |
+| PUSH_TOKENS | Tokens push |
+| POINTS_ETUDIANT | Système de points |
+| HISTORIQUE_POINTS | Historique des points |
+| EVENEMENT_ECOLE | Examens et événements |
 
 ---
 
-## 📞 Support
+## 🎨 Charte Graphique
 
-Pour toute question sur le projet, contacte le lead developer sur GitHub.
+| Couleur | Code | Usage |
+|---------|------|-------|
+| Vert CESA | `#2E7D32` | Couleur principale |
+| Vert clair | `#388E3C` | Accents |
+| Orange CESA | `#D84315` | Accents secondaires |
 
 ---
 
-*MyCESA © 2026 — Tous droits réservés*
+## 👥 Comptes de test
+
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| Étudiant | adama.kone | 123456789 |
+
+---
+
+## 📍 GROUPE COFE-CESA
+
+- 📍 Koumassi Nord-Est, Terminus Bus 05, Abidjan
+- 📞 (+225) 27 21 56 31 74
+- 📞 (+225) 07 07 67 84 97
+- 🌐 [cesa-elearning.com](https://cesa-elearning.com/cesa/)
+- 🏛️ Fondé en 1992
+
+---
+
+## 🔮 Prochaines Étapes
+
+- [ ] Interface Web Admin React
+- [ ] Génération APK final (EAS Build)
+- [ ] Messagerie étudiant↔prof
+- [ ] Notifications push distantes (APK)
+
+---
+
+## 👨‍💻 Développeur
+
+Développé par **regis** — GROUPE COFE-CESA © 2026

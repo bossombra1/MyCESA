@@ -18,7 +18,8 @@ router.get('/etudiant/:id', auth, async (req, res) => {
 
     const [rows] = await db.query(
       `SELECT et.*, m.Nom_Matiere, s.Nom_Salle, s.Localisation_Salle,
-              p.Nom_Prenoms_Profe AS Nom_Professeur
+              p.Nom_Prenoms_Profe AS Nom_Professeur,
+              et.date_ AS Date_Cours
        FROM EMPLOI_TEMPS et
        JOIN MATIERE m ON et.Id_MATIERE = m.Id_MATIERE
        JOIN SALLE s ON et.Id_SALLE = s.Id_SALLE

@@ -20,6 +20,7 @@ export default function HomeScreen({ navigation }) {
   const [coursJour, setCoursJour] = useState([]);
   const [refreshing, setRefresh]  = useState(false);
   const [menuVisible, setMenu]    = useState(false);
+  const [prochainEvenement, setProchainEvenement] = useState(null);
   const menuAnim = useRef(new Animated.Value(-280)).current;
   const insets   = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
@@ -65,6 +66,12 @@ export default function HomeScreen({ navigation }) {
       const jourNow = JOURS[new Date().getDay()];
       setCoursJour(emploi.filter(c => c.Jour_Semaine === jourNow)
         .sort((a, b) => (a.Heure_Debut || '').localeCompare(b.Heure_Debut || '')));
+
+      // Prochain événement
+      try {
+        const evRes = await API.get(`/evenements/etudiant/${u.Id_UTILISATEUR}`);
+        if (evRes.data.length > 0) setProchainEvenement(evRes.data[0]);
+      } catch (_) {}
 
       setStats({
         notes: notes.length,
@@ -121,10 +128,11 @@ export default function HomeScreen({ navigation }) {
     { icon: '📝', label: 'Mes Notes',        screen: 'Notes' },
     { icon: '📅', label: 'Mes Absences',     screen: 'Absences' },
     { icon: '💰', label: 'Mes Paiements',    screen: 'Paiements' },
+    { icon: '⏳', label: 'Évènements', screen: 'Evenements' },
 
     { icon: '🔔', label: 'Notifications',    screen: 'Notifications' },
-    { icon: '🏅', label: 'Classement',        screen: 'Leaderboard' },
-        { icon: '🏆', label: 'Mes Récompenses',  screen: 'Recompenses' },
+    { icon: '🏅', label: 'Classement',       screen: 'Leaderboard' },
+    { icon: '🏆', label: 'Mes Récompenses',  screen: 'Recompenses' },
     { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
     { icon: '🪪', label: 'Carte Scolaire',   screen: 'Carte' },
     { icon: 'ℹ️',  label: 'À propos de CESA', screen: 'APropos' },
@@ -219,6 +227,28 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
+        {/* PROCHAIN EXAMEN */}
+        {prochainEvenement && (
+          <TouchableOpacity
+            style={[styles.section, { backgroundColor: theme.section, marginBottom: 0 }]}
+            onPress={() => navigation.navigate('Evenements')}
+          >
+            <View style={styles.sectionHead}>
+              <Text style={[styles.sectionTitre, { color: theme.text }]}>⏳ Prochain examen</Text>
+              <Text style={[styles.voirTout, { color: VERT }]}>Voir tout ›</Text>
+            </View>
+            <View style={[styles.examCard, { backgroundColor: '#FEE2E2' }]}>
+              <Text style={styles.examIcon}>📝</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.examTitre, { color: '#991B1B' }]}>{prochainEvenement.Titre}</Text>
+                <Text style={[styles.examDate, { color: '#EF4444' }]}>
+                  Dans {prochainEvenement.jours_restants} jour(s)
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* COURS DU JOUR */}
         <View style={[styles.section, { backgroundColor: theme.section }]}> 
           <View style={styles.sectionHead}>
@@ -280,9 +310,9 @@ export default function HomeScreen({ navigation }) {
 
       {/* FAB ASSISTANT */}
       <TouchableOpacity
-        style={[styles.fab, { bottom: insets.bottom + 80 }]}
+        style={[styles.fab, { bottom: insets.bottom + 10 }]}
         onPress={() => navigation.navigate('ChatBot')}
-        activeOpacity={0.85}
+        activeOpacity={0.20}
       >
         <Text style={styles.fabIcon}>🤖</Text>
         <Text style={styles.fabTxt}>Assistant</Text>
@@ -402,6 +432,11 @@ fab: {
   coursHeureFin: { fontSize: 11, color: '#64748B' },
   coursMatiere: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
   coursSalle: { fontSize: 12, color: '#64748B', marginTop: 2 },
+
+  examCard:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEE2E2', borderRadius: 12, padding: 12, gap: 10 },
+  examIcon:  { fontSize: 28 },
+  examTitre: { fontSize: 14, fontWeight: '800' },
+  examDate:  { fontSize: 12, marginTop: 2, fontWeight: '600' },
 
   // STATS
   statsRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
