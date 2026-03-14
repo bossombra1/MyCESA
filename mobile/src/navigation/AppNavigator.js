@@ -42,7 +42,10 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [styles.tabBar, { paddingBottom: bottomPad, height: 60 + bottomPad }],
+        tabBarStyle: [styles.tabBar, { 
+          paddingBottom: bottomPad, 
+          height: 60 + bottomPad 
+        }],
         tabBarShowLabel: false,
       }}
     >

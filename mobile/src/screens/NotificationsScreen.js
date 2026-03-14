@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 import API from '../api/api';
 
 const VERT   = '#2E7D32';
@@ -24,6 +25,7 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   useEffect(() => { loadNotifications(); }, []);
 
@@ -69,7 +71,7 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: theme.bg }]}> 
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -133,7 +135,7 @@ export default function NotificationsScreen() {
               return (
                 <TouchableOpacity
                   key={index}
-                  style={[styles.card, nonLu && { borderLeftColor: color, backgroundColor: bg + '40' }]}
+                  style={[styles.card, { backgroundColor: theme.card }, nonLu && { borderLeftColor: color, backgroundColor: bg + '40' }]}
                   onPress={() => nonLu && marquerLu(notif.Id_EVENEMENT)}
                   activeOpacity={0.85}
                 >
@@ -145,12 +147,12 @@ export default function NotificationsScreen() {
                   {/* CONTENU */}
                   <View style={styles.cardContent}>
                     <View style={styles.cardTop}>
-                      <Text style={[styles.titre, nonLu && { color: '#1E293B', fontWeight: '900' }]} numberOfLines={1}>
+                      <Text style={[styles.titre, { color: theme.textSub }, nonLu && { color: theme.text, fontWeight: '900' }]} numberOfLines={1}>
                         {notif.Titre_Notif}
                       </Text>
                       {nonLu && <View style={[styles.dot, { backgroundColor: color }]} />}
                     </View>
-                    <Text style={styles.message} numberOfLines={2}>{notif.Message_Notif}</Text>
+                    <Text style={[styles.message, { color: theme.textSub }]} numberOfLines={2}>{notif.Message_Notif}</Text>
                     <View style={styles.cardFooter}>
                       <Text style={styles.date}>
                         🕐 {new Date(notif.Date_Notif).toLocaleDateString('fr-FR', {

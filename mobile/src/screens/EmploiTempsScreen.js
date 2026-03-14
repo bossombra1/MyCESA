@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 import API from '../api/api';
 
 const VERT   = '#2E7D32';
@@ -27,6 +28,7 @@ export default function EmploiTempsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [jourActif, setJourActif] = useState(null);
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   useEffect(() => {
     loadEmploi();
@@ -70,7 +72,7 @@ export default function EmploiTempsScreen() {
   );
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: theme.bg }]}>
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -171,7 +173,7 @@ export default function EmploiTempsScreen() {
                     </View>
                     {cours
                       .sort((a, b) => (a.Heure_Debut || '').localeCompare(b.Heure_Debut || ''))
-                      .map((c, i) => renderCours(c, i, col))}
+                      .map((c, i) => renderCours(c, i, col, theme))}
                   </View>
                 );
               })
@@ -184,9 +186,9 @@ export default function EmploiTempsScreen() {
   );
 }
 
-function renderCours(c, i, col) {
+function renderCours(c, i, col, theme) {
   return (
-    <View key={i} style={[styles.card, { borderLeftColor: col?.border || '#2563EB' }]}>
+    <View key={i} style={[styles.card, { backgroundColor: theme.card, borderLeftColor: col?.border || '#2563EB' }]}>
       <View style={styles.cardTop}>
         <View style={styles.cardLeft}>
           <Text style={styles.matiere}>{c.Nom_Matiere || c.Lib_Matiere}</Text>
@@ -208,13 +210,13 @@ function renderCours(c, i, col) {
       <View style={styles.cardInfos}>
         <View style={styles.infoRow}>
           <Text style={styles.infoIcon}>📍</Text>
-          <Text style={styles.infoTxt}>
+          <Text style={[styles.infoTxt, { color: theme.textSub }]}> 
             {c.Nom_Salle}{c.Localisation_Salle ? ` — ${c.Localisation_Salle}` : ''}
           </Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoIcon}>👨‍🏫</Text>
-          <Text style={styles.infoTxt}>{c.Nom_Professeur || 'N/A'}</Text>
+          <Text style={[styles.infoTxt, { color: theme.textSub }]}>{c.Nom_Professeur || 'N/A'}</Text>
         </View>
       </View>
     </View>

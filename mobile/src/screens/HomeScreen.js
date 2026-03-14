@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 import API, { SERVER_URL } from '../api/api';
 
 const VERT   = '#2E7D32';
@@ -21,6 +22,7 @@ export default function HomeScreen({ navigation }) {
   const [menuVisible, setMenu]    = useState(false);
   const menuAnim = useRef(new Animated.Value(-280)).current;
   const insets   = useSafeAreaInsets();
+  const { theme, isDark } = useTheme();
 
   useEffect(() => {
     loadAll();
@@ -126,7 +128,7 @@ export default function HomeScreen({ navigation }) {
   ];
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: theme.bg }]}> 
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
 
       {/* OVERLAY MENU */}
@@ -135,7 +137,7 @@ export default function HomeScreen({ navigation }) {
       )}
 
       {/* DRAWER GAUCHE */}
-      <Animated.View style={[styles.drawer, { transform: [{ translateX: menuAnim }] }]}>
+      <Animated.View style={[styles.drawer, { backgroundColor: theme.drawer, transform: [{ translateX: menuAnim }] }]}>
         <View style={styles.drawerHead}>
           {user?.Image_Etudiant ? (
             <Image source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }} style={styles.drawerAvImg} />
@@ -149,7 +151,7 @@ export default function HomeScreen({ navigation }) {
           {menuItems.map((item) => (
             <TouchableOpacity key={item.screen} style={styles.drawerItem} onPress={() => goTo(item.screen)}>
               <Text style={styles.drawerItemIcon}>{item.icon}</Text>
-              <Text style={styles.drawerItemLabel}>{item.label}</Text>
+              <Text style={[styles.drawerItemLabel, { color: theme.text }]}>{item.label}</Text>
               <Text style={styles.drawerArrow}>›</Text>
             </TouchableOpacity>
           ))}
@@ -160,7 +162,7 @@ export default function HomeScreen({ navigation }) {
       </Animated.View>
 
       {/* HEADER */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.header }]}>
         <TouchableOpacity onPress={toggleMenu} style={styles.menuBtn}>
           <View style={styles.hamburger}>
             <View style={styles.hLine} />
@@ -182,7 +184,7 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 90 }}
       >
         {/* HERO SALUTATION */}
-        <View style={styles.hero}>
+        <View style={[styles.hero, { backgroundColor: theme.hero }]}> 
           <View style={{ flex: 1 }}>
             <Text style={styles.heroSalut}>{salut} 👋</Text>
             <Text style={styles.heroNom}>{user?.Nom_User || 'Étudiant'}</Text>
@@ -200,10 +202,10 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* CARTE MOYENNE */}
-        <View style={styles.moyenneCard}>
+        <View style={[styles.moyenneCard, { backgroundColor: theme.card }]}> 
           <View style={{ flex: 1 }}>
-            <Text style={styles.moyenneLabel}>Moyenne Générale</Text>
-            <Text style={styles.moyenneVal}>
+            <Text style={[styles.moyenneLabel, { color: theme.textSub }]}>Moyenne Générale</Text>
+            <Text style={[styles.moyenneVal, { color: theme.text }]}> 
               {moyenneGen || '--'}<Text style={styles.moyenneSur}>/20</Text>
             </Text>
           </View>
@@ -215,9 +217,9 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* COURS DU JOUR */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: theme.section }]}> 
           <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitre}>📅 Cours du jour — {jourNow}</Text>
+            <Text style={[styles.sectionTitre, { color: theme.text }]}>📅 Cours du jour — {jourNow}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('EmploiTemps')}>
               <Text style={styles.voirTout}>Voir tout ›</Text>
             </TouchableOpacity>
@@ -228,15 +230,15 @@ export default function HomeScreen({ navigation }) {
             </View>
           ) : (
             coursJour.map((cours, i) => (
-              <View key={i} style={styles.coursCard}>
+            <View key={i} style={[styles.coursCard, { backgroundColor: theme.bg, borderLeftColor: '#2E7D32' }]}> 
                 <View style={styles.coursHeureBadge}>
                   <Text style={styles.coursHeureDebut}>{cours.Heure_Debut || '--:--'}</Text>
                   <Text style={styles.coursHeureSep}>|</Text>
                   <Text style={styles.coursHeureFin}>{cours.Heure_Fin || '--:--'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.coursMatiere}>{cours.Lib_Matiere || cours.Lib_Cours || 'Cours'}</Text>
-                  <Text style={styles.coursSalle}>📍 {cours.Salle || 'Salle non définie'}</Text>
+                  <Text style={[styles.coursMatiere, { color: theme.text }]}>{cours.Lib_Matiere || cours.Lib_Cours || 'Cours'}</Text>
+                  <Text style={[styles.coursSalle, { color: theme.textSub }]}>📍 {cours.Salle || 'Salle non définie'}</Text>
                 </View>
               </View>
             ))
@@ -244,23 +246,23 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* STATISTIQUES */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitre}>📊 Mes Statistiques</Text>
+        <View style={[styles.section, { backgroundColor: theme.section }]}> 
+          <Text style={[styles.sectionTitre, { color: theme.text }]}>📊 Mes Statistiques</Text>
           <View style={styles.statsRow}>
-            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#2563EB' }]} onPress={() => navigation.navigate('Notes')}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#2563EB', backgroundColor: theme.card }]} onPress={() => navigation.navigate('Notes')}>
               <Text style={styles.statIcon}>📝</Text>
-              <Text style={styles.statVal}>{stats.notes}</Text>
-              <Text style={styles.statLbl}>Évaluations</Text>
+              <Text style={[styles.statVal, { color: theme.text }]}>{stats.notes}</Text>
+              <Text style={[styles.statLbl, { color: theme.textSub }]}>Évaluations</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.statCard, { borderTopColor: ORANGE }]} onPress={() => navigation.navigate('Absences')}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: ORANGE, backgroundColor: theme.card }]} onPress={() => navigation.navigate('Absences')}>
               <Text style={styles.statIcon}>📅</Text>
-              <Text style={styles.statVal}>{stats.absences}</Text>
-              <Text style={styles.statLbl}>Absences</Text>
+              <Text style={[styles.statVal, { color: theme.text }]}>{stats.absences}</Text>
+              <Text style={[styles.statLbl, { color: theme.textSub }]}>Absences</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#10B981' }]} onPress={() => navigation.navigate('Paiements')}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#10B981', backgroundColor: theme.card }]} onPress={() => navigation.navigate('Paiements')}>
               <Text style={styles.statIcon}>💰</Text>
-              <Text style={styles.statVal}>{stats.paiements}</Text>
-              <Text style={styles.statLbl}>Paiements</Text>
+              <Text style={[styles.statVal, { color: theme.text }]}>{stats.paiements}</Text>
+              <Text style={[styles.statLbl, { color: theme.textSub }]}>Paiements</Text>
             </TouchableOpacity>
           </View>
         </View>

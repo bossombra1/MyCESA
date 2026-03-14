@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 import API from '../api/api';
 
 const VERT   = '#2E7D32';
@@ -37,6 +38,7 @@ export default function ChatBotScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef();
   const insets = useSafeAreaInsets();
+  const { theme, isDark } = useTheme();
 
   const sendMessage = async (texte) => {
     const question = (texte || input).trim();
@@ -83,7 +85,7 @@ export default function ChatBotScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.wrapper}>
+      <View style={[styles.wrapper, { backgroundColor: theme.bg }]}> 
         <StatusBar barStyle="light-content" backgroundColor={VERT} />
 
         {/* HEADER */}
@@ -117,7 +119,7 @@ export default function ChatBotScreen({ navigation }) {
 
           {/* SUGGESTIONS (affichées seulement au début) */}
           {messages.length === 1 && (
-            <View style={styles.suggestionsBox}>
+          <View style={[styles.suggestionsBox, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}> 
               <Text style={styles.suggestionsTitre}>💡 Suggestions</Text>
               <View style={styles.suggestionsRow}>
                 {SUGGESTIONS.map((s, i) => (
@@ -147,12 +149,16 @@ export default function ChatBotScreen({ navigation }) {
               <View style={styles.bubbleCol}>
                 <View style={[
                   styles.bubble,
-                  msg.from === 'user' ? styles.bubbleUser : styles.bubbleBot,
+                  msg.from === 'user'
+                    ? styles.bubbleUser
+                    : [styles.bubbleBot, { backgroundColor: theme.card, borderColor: theme.cardBorder }],
                   msg.erreur && styles.bubbleErreur,
                 ]}>
                   <Text style={[
                     styles.bubbleTxt,
-                    msg.from === 'user' ? styles.bubbleTxtUser : styles.bubbleTxtBot,
+                    msg.from === 'user'
+                      ? styles.bubbleTxtUser
+                      : { color: theme.text },
                   ]}>
                     {msg.text}
                   </Text>
@@ -192,9 +198,9 @@ export default function ChatBotScreen({ navigation }) {
         </ScrollView>
 
         {/* BARRE DE SAISIE */}
-        <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
+        <View style={[styles.inputBar, { backgroundColor: theme.card, borderTopColor: theme.cardBorder, paddingBottom: insets.bottom + 8 }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
             placeholder="Pose ta question..."
             placeholderTextColor="#94A3B8"
             value={input}
@@ -274,8 +280,8 @@ const styles = StyleSheet.create({
   bubbleCol: { flex: 1 },
   bubble: { padding: 12, borderRadius: 18, elevation: 1 },
   bubbleBot: {
-    backgroundColor: '#fff', borderBottomLeftRadius: 4,
-    borderWidth: 1, borderColor: '#E2E8F0',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
   },
   bubbleUser: { backgroundColor: VERT, borderBottomRightRadius: 4 },
   bubbleErreur: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
