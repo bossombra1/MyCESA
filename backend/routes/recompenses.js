@@ -230,4 +230,62 @@ router.post('/calculer/:userId', auth, async (req, res) => {
   }
 });
 
+// GET classement des étudiants
+router.get('/classement/top', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        pe.Id_UTILISATEUR,
+        pe.Total_Points,
+        pe.Streak_Connexion,
+        pe.Niveau,
+        u.Nom_User,
+        e.Matricule_Etudiant,
+        e.Image_Etudiant,
+        c.Nom_Classe,
+        f.Nom_Filiere
+      FROM POINTS_ETUDIANT pe
+      JOIN UTILISATEUR u ON u.Id_UTILISATEUR = pe.Id_UTILISATEUR
+      LEFT JOIN ETUDIANT e ON e.Email_Etudiant = u.Email_User
+      LEFT JOIN CLASSE c ON c.Id_Classe = e.Id_Classe
+      LEFT JOIN FILIERE f ON f.Id_Filiere = e.Id_Filiere
+      ORDER BY pe.Total_Points DESC
+      LIMIT 20
+    `);
+
+    // Ajouter rang et niveau info
+    const classement = rows.map((r, i) => ({
+      ...r,
+      rang: i + 1,
+      ...getNiveau(r.Total_Points),
+    }));
+
+    res.json(classement);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET rang d'un étudiant spécifique
+router.get('/classement/rang/:userId', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT COUNT(*) + 1 as rang
+      FROM POINTS_ETUDIANT
+      WHERE Total_Points > (
+        SELECT Total_Points FROM POINTS_ETUDIANT WHERE Id_UTILISATEUR = ?
+      )
+    `, [req.params.userId]);
+
+    const [total] = await db.query('SELECT COUNT(*) as total FROM POINTS_ETUDIANT');
+
+    res.json({
+      rang: rows[0].rang,
+      total: total[0].total,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

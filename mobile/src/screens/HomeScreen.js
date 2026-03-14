@@ -123,6 +123,7 @@ export default function HomeScreen({ navigation }) {
     { icon: '💰', label: 'Mes Paiements',    screen: 'Paiements' },
 
     { icon: '🔔', label: 'Notifications',    screen: 'Notifications' },
+    { icon: '🏅', label: 'Classement',        screen: 'Leaderboard' },
         { icon: '🏆', label: 'Mes Récompenses',  screen: 'Recompenses' },
     { icon: '🤖', label: 'Assistant MyCESA', screen: 'ChatBot' },
     { icon: '🪪', label: 'Carte Scolaire',   screen: 'Carte' },

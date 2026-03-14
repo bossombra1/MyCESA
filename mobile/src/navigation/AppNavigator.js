@@ -14,6 +14,7 @@ import EmploiTempsScreen from '../screens/EmploiTempsScreen';
 import ChatBotScreen from '../screens/ChatBotScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import RecompensesScreen from '../screens/RecompensesScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
 import ProfilScreen from '../screens/ProfilScreen';
 import CarteEtudiantScreen from '../screens/CarteEtudiantScreen';
 import AProposScreen from '../screens/AProposScreen';
@@ -94,6 +95,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ChatBot"       component={ChatBotScreen}       options={{ title: 'Assistant MyCESA' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
         <Stack.Screen name="Recompenses"   component={RecompensesScreen} options={{ title: '🏆 Mes Récompenses' }} />
+        <Stack.Screen name="Leaderboard"   component={LeaderboardScreen} options={{ title: '🏅 Classement' }} />
         <Stack.Screen name="Carte"         component={CarteEtudiantScreen} options={{ title: 'Ma Carte Scolaire' }} />
         <Stack.Screen name="APropos"       component={AProposScreen}       options={{ title: 'À propos de CESA' }} />
       </Stack.Navigator>
