@@ -7,6 +7,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import API from '../api/api';
+import { Alert } from 'react-native';
+
+// notifications push activées lors du build APK
+const envoyerNotificationLocale = async (titre, corps) => {
+  Alert.alert(titre, corps + '\n\n(Push notifications disponibles sur l\'APK final)');
+};
 
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
@@ -119,6 +125,14 @@ export default function NotificationsScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* BOUTON TEST NOTIFICATION */}
+        <TouchableOpacity
+          style={{ margin: 16, backgroundColor: '#2E7D32', padding: 14, borderRadius: 14, alignItems: 'center' }}
+          onPress={() => envoyerNotificationLocale('🎓 MyCESA', 'Test notification push réussie !')}
+        >
+          <Text style={{ color: '#fff', fontWeight: '800' }}>🔔 Tester une notification</Text>
+        </TouchableOpacity>
 
         {/* LISTE */}
         <View style={styles.listContainer}>
