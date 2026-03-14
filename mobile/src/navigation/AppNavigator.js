@@ -5,20 +5,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import LoginScreen from '../screens/LoginScreen';
-import HomeScreen from '../screens/HomeScreen';
-import NotesScreen from '../screens/NotesScreen';
-import AbsencesScreen from '../screens/AbsencesScreen';
-import PaiementsScreen from '../screens/PaiementsScreen';
-import EmploiTempsScreen from '../screens/EmploiTempsScreen';
-import ChatBotScreen from '../screens/ChatBotScreen';
+import LoginScreen         from '../screens/LoginScreen';
+import HomeScreen          from '../screens/HomeScreen';
+import NotesScreen         from '../screens/NotesScreen';
+import AbsencesScreen      from '../screens/AbsencesScreen';
+import PaiementsScreen     from '../screens/PaiementsScreen';
+import EmploiTempsScreen   from '../screens/EmploiTempsScreen';
+import ChatBotScreen       from '../screens/ChatBotScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
-import RecompensesScreen from '../screens/RecompensesScreen';
-import LeaderboardScreen from '../screens/LeaderboardScreen';
-import EvenementsScreen from '../screens/EvenementsScreen';
-import ProfilScreen from '../screens/ProfilScreen';
+import RecompensesScreen   from '../screens/RecompensesScreen';
+import LeaderboardScreen   from '../screens/LeaderboardScreen';
+import EvenementsScreen    from '../screens/EvenementsScreen';
+import ProfilScreen        from '../screens/ProfilScreen';
 import CarteEtudiantScreen from '../screens/CarteEtudiantScreen';
-import AProposScreen from '../screens/AProposScreen';
+import AProposScreen       from '../screens/AProposScreen';
+import MessagerieScreen    from '../screens/MessagerieScreen';
+import ConversationScreen  from '../screens/ConversationScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -37,17 +39,16 @@ function TabIcon({ icon, label, focused }) {
 }
 
 function MainTabs() {
-  const insets = useSafeAreaInsets();
-  // Sur Android, on ajoute du padding manuel pour éviter la barre de navigation
+  const insets   = useSafeAreaInsets();
   const bottomPad = Platform.OS === 'android' ? Math.max(insets.bottom, 16) + 8 : insets.bottom;
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [styles.tabBar, { 
-          paddingBottom: bottomPad, 
-          height: 60 + bottomPad 
+        tabBarStyle: [styles.tabBar, {
+          paddingBottom: bottomPad,
+          height: 60 + bottomPad,
         }],
         tabBarShowLabel: false,
       }}
@@ -55,23 +56,17 @@ function MainTabs() {
       <Tab.Screen
         name="Home"
         component={HomeScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" label="Accueil" focused={focused} />,
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🏠" label="Accueil" focused={focused} /> }}
       />
       <Tab.Screen
         name="EmploiTemps"
         component={EmploiTempsScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon icon="🕐" label="Emploi" focused={focused} />,
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🕐" label="Emploi" focused={focused} /> }}
       />
       <Tab.Screen
         name="Profil"
         component={ProfilScreen}
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Profil" focused={focused} />,
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Profil" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
@@ -83,8 +78,8 @@ export default function AppNavigator() {
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
-          headerStyle: { backgroundColor: VERT },
-          headerTintColor: '#fff',
+          headerStyle:      { backgroundColor: VERT },
+          headerTintColor:  '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
         }}
       >
@@ -95,11 +90,23 @@ export default function AppNavigator() {
         <Stack.Screen name="Paiements"     component={PaiementsScreen}     options={{ title: 'Mes Paiements' }} />
         <Stack.Screen name="ChatBot"       component={ChatBotScreen}       options={{ title: 'Assistant MyCESA' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-        <Stack.Screen name="Recompenses"   component={RecompensesScreen} options={{ title: '🏆 Mes Récompenses' }} />
-        <Stack.Screen name="Leaderboard"   component={LeaderboardScreen} options={{ title: '🏅 Classement' }} />
-        <Stack.Screen name="Evenements"   component={EvenementsScreen} options={{ title: '⏳ Échéances' }} />
+        <Stack.Screen name="Recompenses"   component={RecompensesScreen}   options={{ title: '🏆 Mes Récompenses' }} />
+        <Stack.Screen name="Leaderboard"   component={LeaderboardScreen}   options={{ title: '🏅 Classement' }} />
+        <Stack.Screen name="Evenements"    component={EvenementsScreen}    options={{ title: '⏳ Échéances' }} />
         <Stack.Screen name="Carte"         component={CarteEtudiantScreen} options={{ title: 'Ma Carte Scolaire' }} />
         <Stack.Screen name="APropos"       component={AProposScreen}       options={{ title: 'À propos de CESA' }} />
+        <Stack.Screen name="Messagerie"    component={MessagerieScreen}    options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Conversation"
+          component={ConversationScreen}
+          options={({ route }) => ({
+            headerShown:      true,
+            headerStyle:      { backgroundColor: VERT },
+            headerTintColor:  '#fff',
+            headerTitleStyle: { fontWeight: '800' },
+            title: route.params?.nomProf || 'Conversation',
+          })}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -115,10 +122,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
   },
-  tabItem: { alignItems: 'center', justifyContent: 'center', paddingTop: 6 },
-  tabIcon: { fontSize: 24, opacity: 0.4 },
-  tabIconActive: { opacity: 1 },
-  tabLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '600', marginTop: 2 },
-  tabLabelActive: { color: VERT, fontWeight: '800' },
-  tabDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: VERT, marginTop: 3 },
+  tabItem:      { alignItems: 'center', justifyContent: 'center', paddingTop: 6 },
+  tabIcon:      { fontSize: 24, opacity: 0.4 },
+  tabIconActive:{ opacity: 1 },
+  tabLabel:     { fontSize: 11, color: '#94A3B8', fontWeight: '600', marginTop: 2 },
+  tabLabelActive:{ color: VERT, fontWeight: '800' },
+  tabDot:       { width: 4, height: 4, borderRadius: 2, backgroundColor: VERT, marginTop: 3 },
 });

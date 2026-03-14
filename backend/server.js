@@ -30,6 +30,7 @@ app.use('/api/chatbot',       require('./routes/chatbot'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/recompenses',  require('./routes/recompenses'));
 app.use('/api/evenements',   require('./routes/evenements'));
+app.use('/api/messagerie', require('./routes/messagerie'));
 app.use('/api/professeurs',   require('./routes/professeurs'));
 
 // Routes d'upload

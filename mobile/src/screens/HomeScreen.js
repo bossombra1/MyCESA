@@ -129,7 +129,7 @@ export default function HomeScreen({ navigation }) {
     { icon: '📅', label: 'Mes Absences',     screen: 'Absences' },
     { icon: '💰', label: 'Mes Paiements',    screen: 'Paiements' },
     { icon: '⏳', label: 'Évènements', screen: 'Evenements' },
-
+     { icon: '💬', label: 'Messagerie',       screen: 'Messagerie' },
     { icon: '🔔', label: 'Notifications',    screen: 'Notifications' },
     { icon: '🏅', label: 'Classement',       screen: 'Leaderboard' },
     { icon: '🏆', label: 'Mes Récompenses',  screen: 'Recompenses' },

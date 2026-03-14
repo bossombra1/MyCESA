@@ -115,6 +115,15 @@
 
 ---
 
+🔮 Prochaines Étapes
+
+- [ ] Interface Web Admin React (gestion notes, absences, emploi du temps, événements)
+- [ ] Système de rôles prof dans l'appli mobile (pages dédiées prof)
+- [ ] Saisie des notes par les professeurs
+- [ ] Notifications push distantes (APK EAS Build)
+- [ ] Génération APK final (EAS Build)
+
+---
 ## 🗄️ Structure du Projet
 ```
 MyCESA/
@@ -267,14 +276,16 @@ const BASE_URL = `${SERVER_URL}/api`;
 
 ---
 
-## 🔮 Prochaines Étapes
+## ✅ Fonctionnalités Complétées
 
-- [ ] Interface Web Admin React
-- [ ] Génération APK final (EAS Build)
-- [ ] Messagerie étudiant↔prof
-- [ ] Notifications push distantes (APK)
-
----
+- [x] Splash Screen animé
+- [x] Mode sombre global
+- [x] Notifications locales
+- [x] Système de points et récompenses
+- [x] Leaderboard classement étudiants
+- [x] Compte à rebours examens et échéances
+- [x] Emploi du temps par date réelle (Jour/Semaine/Mois/Année)
+- [x] Messagerie étudiant↔prof (temps réel, auto-refresh)
 
 ## 👨‍💻 Développeur
 
