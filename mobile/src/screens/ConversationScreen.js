@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  ActivityIndicator, StatusBar, Platform
+  ActivityIndicator, StatusBar, Platform, Keyboard
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,11 +13,12 @@ const ORANGE = '#D84315';
 
 export default function ConversationScreen({ route, navigation }) {
   const { Id_Etudiant, Id_Professeur, Id_Conversation, userId, nomProf } = route.params;
-  const [messages, setMessages] = useState([]);
-  const [input,    setInput]    = useState('');
-  const [loading,  setLoading]  = useState(true);
-  const [sending,  setSending]  = useState(false);
-  const [convId,   setConvId]   = useState(Id_Conversation || null);
+  const [messages,  setMessages]  = useState([]);
+  const [input,     setInput]     = useState('');
+  const [loading,   setLoading]   = useState(true);
+  const [sending,   setSending]   = useState(false);
+  const [convId,    setConvId]    = useState(Id_Conversation || null);
+  const [barreH,    setBarreH]    = useState(0);
   const flatRef = useRef();
   const insets  = useSafeAreaInsets();
   const themeCtx = useTheme();
@@ -28,12 +29,30 @@ export default function ConversationScreen({ route, navigation }) {
 
   useEffect(() => {
     navigation.setOptions({ title: nomProf || 'Conversation' });
+
+    // Écouter le clavier
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setBarreH(e.endCoordinates.height);
+      setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setBarreH(0);
+    });
+
     if (convId) {
       loadMessages();
       const interval = setInterval(() => loadMessages(true), 3000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        showSub.remove();
+        hideSub.remove();
+      };
     } else {
       setLoading(false);
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
     }
   }, [convId]);
 
@@ -99,63 +118,26 @@ export default function ConversationScreen({ route, navigation }) {
     </View>
   );
 
-  const renderMessage = ({ item, index }) => {
-    const isMe    = item.Id_Expediteur === userId;
-    const prevMsg = messages[index - 1];
-    const showDate = !prevMsg || formatDate(item.CreatedAt) !== formatDate(prevMsg.CreatedAt);
-    return (
-      <View>
-        {showDate && (
-          <View style={styles.dateSep}>
-            <Text style={[styles.dateSepTxt, { color: theme.textMuted, backgroundColor: theme.bg }]}>
-              {formatDate(item.CreatedAt)}
-            </Text>
-          </View>
-        )}
-        <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowOther]}>
-          {!isMe && (
-            <View style={[styles.avatarMini, { backgroundColor: VERT + '20' }]}>
-              <Text style={[styles.avatarMiniTxt, { color: VERT }]}>
-                {nomProf?.charAt(0)?.toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={[
-            styles.bubble,
-            isMe
-              ? { backgroundColor: VERT, borderBottomRightRadius: 4 }
-              : { backgroundColor: theme.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: theme.cardBorder }
-          ]}>
-            <Text style={[styles.bubbleTxt, { color: isMe ? '#fff' : theme.text }]}>
-              {item.Contenu}
-            </Text>
-            <Text style={[styles.bubbleHeure, { color: isMe ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
-              {formatHeure(item.CreatedAt)}
-              {isMe && <Text>{item.Lu ? ' ✓✓' : ' ✓'}</Text>}
-            </Text>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.bg }]}>
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
 
+      {/* MESSAGES — paddingBottom dynamique selon clavier */}
       <FlatList
         ref={flatRef}
         data={messages}
         keyExtractor={item => `msg-${item.Id_Message}`}
-        renderItem={renderMessage}
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: insets.bottom + 80,
+          paddingBottom: barreH > 0
+            ? barreH + 70
+            : insets.bottom + 70,
           gap: 4,
         }}
         onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: false })}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ListEmptyComponent={() => (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyIcon}>💬</Text>
@@ -164,15 +146,54 @@ export default function ConversationScreen({ route, navigation }) {
             </Text>
           </View>
         )}
+        renderItem={({ item, index }) => {
+          const isMe    = item.Id_Expediteur === userId;
+          const prevMsg = messages[index - 1];
+          const showDate = !prevMsg || formatDate(item.CreatedAt) !== formatDate(prevMsg.CreatedAt);
+          return (
+            <View>
+              {showDate && (
+                <View style={styles.dateSep}>
+                  <Text style={[styles.dateSepTxt, { color: theme.textMuted, backgroundColor: theme.bg }]}>
+                    {formatDate(item.CreatedAt)}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowOther]}>
+                {!isMe && (
+                  <View style={[styles.avatarMini, { backgroundColor: VERT + '20' }]}>
+                    <Text style={[styles.avatarMiniTxt, { color: VERT }]}>
+                      {nomProf?.charAt(0)?.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={[
+                  styles.bubble,
+                  isMe
+                    ? { backgroundColor: VERT, borderBottomRightRadius: 4 }
+                    : { backgroundColor: theme.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: theme.cardBorder }
+                ]}>
+                  <Text style={[styles.bubbleTxt, { color: isMe ? '#fff' : theme.text }]}>
+                    {item.Contenu}
+                  </Text>
+                  <Text style={[styles.bubbleHeure, { color: isMe ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
+                    {formatHeure(item.CreatedAt)}
+                    {isMe && <Text>{item.Lu ? ' ✓✓' : ' ✓'}</Text>}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          );
+        }}
       />
 
-      {/* BARRE SAISIE */}
+      {/* BARRE SAISIE — position absolute collée au-dessus du clavier */}
       <View style={[
         styles.inputBar,
         {
           backgroundColor: theme.card,
           borderTopColor: theme.cardBorder,
-          paddingBottom: insets.bottom + 8,
+          bottom: barreH > 0 ? barreH : insets.bottom,
         }
       ]}>
         <TextInput
@@ -219,13 +240,14 @@ const styles = StyleSheet.create({
   bubble:      { maxWidth: '75%', padding: 10, borderRadius: 16 },
   bubbleTxt:   { fontSize: 14, lineHeight: 20 },
   bubbleHeure: { fontSize: 10, marginTop: 4, textAlign: 'right' },
+
+  // BARRE SAISIE — position absolute
   inputBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    alignItems: 'flex-end',
-    gap: 8,
+    position: 'absolute', left: 0, right: 0,
+    flexDirection: 'row', paddingHorizontal: 12,
+    paddingTop: 10, paddingBottom: 10,
+    borderTopWidth: 1, alignItems: 'flex-end', gap: 8,
+    elevation: 10,
   },
   input: {
     flex: 1, minHeight: 44, maxHeight: 100,

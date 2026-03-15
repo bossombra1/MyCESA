@@ -25,7 +25,12 @@ export default function MessagerieScreen({ navigation }) {
     text: '#1E293B', textSub: '#64748B', textMuted: '#94A3B8',
   };
 
-  useEffect(() => { loadData(); }, []);
+ useEffect(() => {
+  loadData();
+  // Auto-refresh toutes les 5 secondes pour les nouveaux messages
+  const interval = setInterval(() => loadData(), 5000);
+  return () => clearInterval(interval);
+}, []);
 
   const loadData = async () => {
     try {
