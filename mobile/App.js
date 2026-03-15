@@ -15,11 +15,13 @@ export default function App() {
 
   const initNotifications = async () => {
     try {
-      const { enregistrerTokenPush } = await import('./src/utils/notifications');
-      const stored = await AsyncStorage.getItem('user');
-      if (stored) {
-        const user = JSON.parse(stored);
-        await enregistrerTokenPush(user.Id_UTILISATEUR);
+      const notifs = await import('./src/utils/notifications');
+      if (notifs?.enregistrerTokenPush) {
+        const stored = await AsyncStorage.getItem('user');
+        if (stored) {
+          const user = JSON.parse(stored);
+          await notifs.enregistrerTokenPush(user.Id_UTILISATEUR);
+        }
       }
     } catch (e) {
       console.log('Init notifs:', e);
@@ -27,7 +29,11 @@ export default function App() {
   };
 
   if (!splashDone) {
-    return <SplashAnimScreen onFinish={() => setSplashDone(true)} />;
+    return (
+      <SafeAreaProvider>
+        <SplashAnimScreen onFinish={() => setSplashDone(true)} />
+      </SafeAreaProvider>
+    );
   }
 
   return (

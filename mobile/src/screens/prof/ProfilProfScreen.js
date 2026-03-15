@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   StatusBar, Alert, Platform
@@ -6,7 +6,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
-import { AuthContext } from '../../context/AuthContext';
 
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
@@ -19,7 +18,6 @@ export default function ProfilProfScreen({ navigation }) {
     bg: '#F5F7F5', card: '#FFFFFF', cardBorder: '#E2E8F0',
     text: '#1E293B', textSub: '#64748B', textMuted: '#94A3B8',
   };
-  const { setUser } = useContext(AuthContext);
 
   useEffect(() => {
     AsyncStorage.getItem('user').then(s => setProf(JSON.parse(s)));
@@ -29,19 +27,18 @@ export default function ProfilProfScreen({ navigation }) {
     Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
       { text: 'Oui', style: 'destructive', onPress: async () => {
-        await AsyncStorage.removeItem('user');
         await AsyncStorage.removeItem('token');
-        setUser(null);
+        await AsyncStorage.removeItem('user');
+        navigation.replace('Login');
       }},
     ]);
   };
-
-  const toggleDark = () => themeCtx?.toggleTheme?.();
 
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.bg }]}>
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+
         {/* HERO */}
         <View style={styles.hero}>
           <View style={styles.deco1} />
@@ -64,7 +61,7 @@ export default function ProfilProfScreen({ navigation }) {
           {/* Mode sombre */}
           <TouchableOpacity
             style={[styles.optionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-            onPress={toggleDark}
+            onPress={() => themeCtx?.toggleTheme?.()}
           >
             <Text style={styles.optionIcon}>{themeCtx?.isDark ? '☀️' : '🌙'}</Text>
             <Text style={[styles.optionLabel, { color: theme.text }]}>
@@ -83,6 +80,16 @@ export default function ProfilProfScreen({ navigation }) {
             <Text style={[styles.optionArrow, { color: VERT }]}>›</Text>
           </TouchableOpacity>
 
+          {/* À propos */}
+          <TouchableOpacity
+            style={[styles.optionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            onPress={() => navigation.navigate('APropos')}
+          >
+            <Text style={styles.optionIcon}>ℹ️</Text>
+            <Text style={[styles.optionLabel, { color: theme.text }]}>À propos de CESA</Text>
+            <Text style={[styles.optionArrow, { color: VERT }]}>›</Text>
+          </TouchableOpacity>
+
           {/* Déconnexion */}
           <TouchableOpacity
             style={[styles.optionCard, { backgroundColor: '#FEE2E2', borderColor: '#EF4444' }]}
@@ -93,6 +100,54 @@ export default function ProfilProfScreen({ navigation }) {
             <Text style={[styles.optionArrow, { color: '#EF4444' }]}>›</Text>
           </TouchableOpacity>
         </View>
+
+        {/* SECTION À PROPOS */}
+        <View style={[styles.aProposCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.aProposTitre, { color: VERT }]}>🏫 GROUPE COFE-CESA</Text>
+          <Text style={[styles.aProposSlogan, { color: theme.textSub }]}>
+            « Une excellence à votre service ! »
+          </Text>
+          <View style={styles.aProposSep} />
+          <View style={styles.aProposRow}>
+            <Text style={styles.aProposIcon}>📍</Text>
+            <Text style={[styles.aProposTxt, { color: theme.textSub }]}>
+              Koumassi Nord-Est, Terminus Bus 05, Abidjan
+            </Text>
+          </View>
+          <View style={styles.aProposRow}>
+            <Text style={styles.aProposIcon}>📞</Text>
+            <Text style={[styles.aProposTxt, { color: theme.textSub }]}>
+              (+225) 27 21 56 31 74
+            </Text>
+          </View>
+          <View style={styles.aProposRow}>
+            <Text style={styles.aProposIcon}>📞</Text>
+            <Text style={[styles.aProposTxt, { color: theme.textSub }]}>
+              (+225) 07 07 67 84 97
+            </Text>
+          </View>
+          <View style={styles.aProposRow}>
+            <Text style={styles.aProposIcon}>🌐</Text>
+            <Text style={[styles.aProposTxt, { color: VERT }]}>
+              cesa-elearning.com
+            </Text>
+          </View>
+          <View style={styles.aProposRow}>
+            <Text style={styles.aProposIcon}>🏛️</Text>
+            <Text style={[styles.aProposTxt, { color: theme.textSub }]}>
+              Fondé en 1992
+            </Text>
+          </View>
+        </View>
+
+        {/* FOOTER */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerTxt, { color: theme.textMuted }]}>MyCESA © 2026</Text>
+          <Text style={[styles.footerSub, { color: theme.textMuted }]}>
+            GROUPE COFE-CESA — Tous droits réservés
+          </Text>
+        </View>
+
       </ScrollView>
     </View>
   );
@@ -119,4 +174,14 @@ const styles = StyleSheet.create({
   optionIcon:  { fontSize: 22 },
   optionLabel: { flex: 1, fontSize: 15, fontWeight: '700' },
   optionArrow: { fontSize: 22 },
+  aProposCard: { marginHorizontal: 16, marginTop: 4, borderRadius: 20, padding: 18, elevation: 2, borderWidth: 1 },
+  aProposTitre:  { fontSize: 15, fontWeight: '800', marginBottom: 4 },
+  aProposSlogan: { fontSize: 12, fontStyle: 'italic', marginBottom: 12 },
+  aProposSep:    { height: 1, backgroundColor: '#E2E8F0', marginBottom: 12 },
+  aProposRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  aProposIcon:   { fontSize: 16 },
+  aProposTxt:    { fontSize: 13, flex: 1 },
+  footer:    { alignItems: 'center', padding: 20 },
+  footerTxt: { fontSize: 12, fontWeight: '600' },
+  footerSub: { fontSize: 11, marginTop: 4 },
 });

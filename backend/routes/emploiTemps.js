@@ -33,9 +33,19 @@ router.get('/etudiant/:id', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET emploi du temps d'un professeur
+// GET emploi du temps d'un professeur (via Id_UTILISATEUR)
 router.get('/professeur/:id', auth, async (req, res) => {
   try {
+    // Trouver Id_PROFESSEUR via Email_User
+    const [prof] = await db.query(
+      `SELECT p.Id_PROFESSEUR FROM PROFESSEUR p
+       JOIN UTILISATEUR u ON u.Email_User = p.email_Profe
+       WHERE u.Id_UTILISATEUR = ?`,
+      [req.params.id]
+    );
+
+    if (!prof.length) return res.json([]);
+
     const [rows] = await db.query(
       `SELECT et.*, m.Nom_Matiere, s.Nom_Salle, c.Nom_Classe
        FROM EMPLOI_TEMPS et
@@ -45,7 +55,7 @@ router.get('/professeur/:id', auth, async (req, res) => {
        WHERE et.Id_PROFESSEUR = ?
        ORDER BY FIELD(et.Jour_Semaine,'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'),
                 et.Heure_Debut`,
-      [req.params.id]
+      [prof[0].Id_PROFESSEUR]
     );
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }

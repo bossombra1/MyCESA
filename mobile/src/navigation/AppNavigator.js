@@ -5,7 +5,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// ── COMMUNS ──
 import LoginScreen         from '../screens/LoginScreen';
+import MessagerieScreen    from '../screens/MessagerieScreen';
+import ConversationScreen  from '../screens/ConversationScreen';
+
+// ── ÉTUDIANT ──
 import HomeScreen          from '../screens/HomeScreen';
 import NotesScreen         from '../screens/NotesScreen';
 import AbsencesScreen      from '../screens/AbsencesScreen';
@@ -19,8 +24,14 @@ import EvenementsScreen    from '../screens/EvenementsScreen';
 import ProfilScreen        from '../screens/ProfilScreen';
 import CarteEtudiantScreen from '../screens/CarteEtudiantScreen';
 import AProposScreen       from '../screens/AProposScreen';
-import MessagerieScreen    from '../screens/MessagerieScreen';
-import ConversationScreen  from '../screens/ConversationScreen';
+
+// ── PROF ──
+import HomeProfScreen      from '../screens/prof/HomeProfScreen';
+import MesEtudiantsScreen  from '../screens/prof/MesEtudiantsScreen';
+import SaisieNotesScreen   from '../screens/prof/SaisieNotesScreen';
+import ProfilProfScreen    from '../screens/prof/ProfilProfScreen';
+import SaisieNotesMatiereScreen from '../screens/prof/SaisieNotesMatiereScreen';
+import BulletinMatiereScreen from '../screens/prof/BulletinMatiereScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -38,36 +49,48 @@ function TabIcon({ icon, label, focused }) {
   );
 }
 
+// ── TABS ÉTUDIANT ──
 function MainTabs() {
-  const insets   = useSafeAreaInsets();
+  const insets    = useSafeAreaInsets();
   const bottomPad = Platform.OS === 'android' ? Math.max(insets.bottom, 16) + 8 : insets.bottom;
-
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [styles.tabBar, {
-          paddingBottom: bottomPad,
-          height: 60 + bottomPad,
-        }],
+        tabBarStyle: [styles.tabBar, { paddingBottom: bottomPad, height: 60 + bottomPad }],
         tabBarShowLabel: false,
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🏠" label="Accueil" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="EmploiTemps"
-        component={EmploiTempsScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🕐" label="Emploi" focused={focused} /> }}
-      />
-      <Tab.Screen
-        name="Profil"
-        component={ProfilScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Profil" focused={focused} /> }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🏠" label="Accueil" focused={focused} /> }} />
+      <Tab.Screen name="EmploiTemps" component={EmploiTempsScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🕐" label="Emploi" focused={focused} /> }} />
+      <Tab.Screen name="Profil" component={ProfilScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Profil" focused={focused} /> }} />
+    </Tab.Navigator>
+  );
+}
+
+// ── TABS PROF ──
+function ProfTabs() {
+  const insets    = useSafeAreaInsets();
+  const bottomPad = Platform.OS === 'android' ? Math.max(insets.bottom, 16) + 8 : insets.bottom;
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: [styles.tabBar, { paddingBottom: bottomPad, height: 60 + bottomPad }],
+        tabBarShowLabel: false,
+      }}
+    >
+      <Tab.Screen name="HomeProf" component={HomeProfScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🏠" label="Accueil" focused={focused} /> }} />
+      <Tab.Screen name="MesEtudiants" component={MesEtudiantsScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🎓" label="Étudiants" focused={focused} /> }} />
+      <Tab.Screen name="EmploiProf" component={EmploiTempsScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🕐" label="Emploi" focused={focused} /> }} />
+      <Tab.Screen name="ProfilProf" component={ProfilProfScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Profil" focused={focused} /> }} />
     </Tab.Navigator>
   );
 }
@@ -83,7 +106,10 @@ export default function AppNavigator() {
           headerTitleStyle: { fontWeight: 'bold' },
         }}
       >
-        <Stack.Screen name="Login"         component={LoginScreen}         options={{ headerShown: false }} />
+        {/* LOGIN */}
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+
+        {/* ── ÉTUDIANT ── */}
         <Stack.Screen name="Main"          component={MainTabs}            options={{ headerShown: false }} />
         <Stack.Screen name="Notes"         component={NotesScreen}         options={{ title: 'Mes Notes' }} />
         <Stack.Screen name="Absences"      component={AbsencesScreen}      options={{ title: 'Mes Absences' }} />
@@ -95,7 +121,16 @@ export default function AppNavigator() {
         <Stack.Screen name="Evenements"    component={EvenementsScreen}    options={{ title: '⏳ Échéances' }} />
         <Stack.Screen name="Carte"         component={CarteEtudiantScreen} options={{ title: 'Ma Carte Scolaire' }} />
         <Stack.Screen name="APropos"       component={AProposScreen}       options={{ title: 'À propos de CESA' }} />
-        <Stack.Screen name="Messagerie"    component={MessagerieScreen}    options={{ headerShown: false }} />
+
+        {/* ── PROF ── */}
+        <Stack.Screen name="MainProf"    component={ProfTabs}          options={{ headerShown: false }} />
+        <Stack.Screen name="SaisieNotes" component={SaisieNotesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ProfilProf"  component={ProfilProfScreen}  options={{ headerShown: false }} />
+        <Stack.Screen name="SaisieNotesMatiere" component={SaisieNotesMatiereScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="BulletinMatiere" component={BulletinMatiereScreen} options={{ headerShown: false }} />
+
+        {/* ── COMMUNS ── */}
+        <Stack.Screen name="Messagerie"   component={MessagerieScreen}  options={{ headerShown: false }} />
         <Stack.Screen
           name="Conversation"
           component={ConversationScreen}
@@ -122,10 +157,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
   },
-  tabItem:      { alignItems: 'center', justifyContent: 'center', paddingTop: 6 },
-  tabIcon:      { fontSize: 24, opacity: 0.4 },
-  tabIconActive:{ opacity: 1 },
-  tabLabel:     { fontSize: 11, color: '#94A3B8', fontWeight: '600', marginTop: 2 },
-  tabLabelActive:{ color: VERT, fontWeight: '800' },
-  tabDot:       { width: 4, height: 4, borderRadius: 2, backgroundColor: VERT, marginTop: 3 },
+  tabItem:        { alignItems: 'center', justifyContent: 'center', paddingTop: 6 },
+  tabIcon:        { fontSize: 24, opacity: 0.4 },
+  tabIconActive:  { opacity: 1 },
+  tabLabel:       { fontSize: 11, color: '#94A3B8', fontWeight: '600', marginTop: 2 },
+  tabLabelActive: { color: VERT, fontWeight: '800' },
+  tabDot:         { width: 4, height: 4, borderRadius: 2, backgroundColor: VERT, marginTop: 3 },
 });
