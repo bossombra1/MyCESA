@@ -76,9 +76,9 @@ export default function HomeProfScreen({ navigation }) {
 
   const menuItems = [
     { icon: '🎓', label: 'Mes Étudiants',  screen: 'MesEtudiants', couleur: '#2563EB', bg: '#EFF6FF', badge: stats.etudiants },
-    { icon: '📝', label: 'Saisir Notes', screen: 'SaisieNotes', couleur: ORANGE, bg: '#FFF7ED', badge: null },
+    { icon: '📝', label: 'Saisir des Notes', screen: 'SaisieNotes', couleur: ORANGE, bg: '#FFF7ED', badge: null },
     { icon: '💬', label: 'Messagerie',     screen: 'Messagerie',   couleur: VERT,      bg: '#F0FDF4', badge: stats.messages > 0 ? stats.messages : null },
-    { icon: '🕐', label: 'Mon Emploi',     screen: 'EmploiProf',   couleur: '#9333EA', bg: '#FDF4FF', badge: stats.cours },
+    { icon: '🕐', label: 'Mon Emploi du Temps',     screen: 'EmploiProf',   couleur: '#9333EA', bg: '#FDF4FF', badge: stats.cours },
   ];
 
   if (loading) return (

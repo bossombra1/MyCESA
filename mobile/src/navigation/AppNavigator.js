@@ -32,6 +32,7 @@ import SaisieNotesScreen   from '../screens/prof/SaisieNotesScreen';
 import ProfilProfScreen    from '../screens/prof/ProfilProfScreen';
 import SaisieNotesMatiereScreen from '../screens/prof/SaisieNotesMatiereScreen';
 import BulletinMatiereScreen from '../screens/prof/BulletinMatiereScreen';
+import EmploiTempsProfScreen from '../screens/prof/EmploiTempsProfScreen'; // Vérifiez le chemin !
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -85,10 +86,14 @@ function ProfTabs() {
     >
       <Tab.Screen name="HomeProf" component={HomeProfScreen}
         options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🏠" label="Accueil" focused={focused} /> }} />
+      
       <Tab.Screen name="MesEtudiants" component={MesEtudiantsScreen}
         options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🎓" label="Étudiants" focused={focused} /> }} />
-      <Tab.Screen name="EmploiProf" component={EmploiTempsScreen}
+
+      {/* MODIFICATION ICI : On change component={EmploiTempsScreen} par EmploiTempsProfScreen */}
+      <Tab.Screen name="EmploiProf" component={EmploiTempsProfScreen} 
         options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🕐" label="Emploi" focused={focused} /> }} />
+      
       <Tab.Screen name="ProfilProf" component={ProfilProfScreen}
         options={{ tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Profil" focused={focused} /> }} />
     </Tab.Navigator>
@@ -128,7 +133,11 @@ export default function AppNavigator() {
         <Stack.Screen name="ProfilProf"  component={ProfilProfScreen}  options={{ headerShown: false }} />
         <Stack.Screen name="SaisieNotesMatiere" component={SaisieNotesMatiereScreen} options={{ headerShown: false }} />
         <Stack.Screen name="BulletinMatiere" component={BulletinMatiereScreen} options={{ headerShown: false }} />
-
+        <Stack.Screen 
+  name="EmploiTempsProf" 
+  component={EmploiTempsProfScreen} 
+  options={{ title: 'Mon Emploi du Temps' }} 
+/>
         {/* ── COMMUNS ── */}
         <Stack.Screen name="Messagerie"   component={MessagerieScreen}  options={{ headerShown: false }} />
         <Stack.Screen
