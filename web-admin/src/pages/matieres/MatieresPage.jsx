@@ -35,11 +35,8 @@ export default function MatieresPage() {
       setFilteredMatieres(matieres);
       return;
     }
-
     const filtered = matieres.filter(
-      (m) =>
-        m.Nom_Matière?.toLowerCase().includes(query.toLowerCase()) ||
-        m.Code_Matière?.toLowerCase().includes(query.toLowerCase())
+      (m) => m.Nom_Matiere?.toLowerCase().includes(query.toLowerCase())
     );
     setFilteredMatieres(filtered);
   };
@@ -71,7 +68,7 @@ export default function MatieresPage() {
   const handleSave = async () => {
     try {
       if (selectedMatiere) {
-        await api.put(`/matieres/${selectedMatiere.Id_Matière}`, formData);
+        await api.put(`/matieres/${selectedMatiere.Id_MATIERE}`, formData);
         toast.success('Matière modifiée');
       } else {
         await api.post('/matieres', formData);
@@ -85,10 +82,8 @@ export default function MatieresPage() {
   };
 
   const columns = [
-    { key: 'Code_Matière', label: 'Code' },
-    { key: 'Nom_Matière', label: 'Nom' },
-    { key: 'Coefficient_Matière', label: 'Coefficient' },
-    { key: 'Volume_Horaire', label: 'Volume horaire' },
+    { key: 'Id_MATIERE', label: 'ID' },
+    { key: 'Nom_Matiere', label: 'Nom de la matière' },
   ];
 
   if (loading)
@@ -104,14 +99,15 @@ export default function MatieresPage() {
         <h1 className="text-3xl font-bold text-gray-900">Matières</h1>
         <button
           onClick={handleAdd}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-2 text-white rounded-lg font-semibold shadow-md"
+          style={{ background: '#2E7D32' }}
         >
           + Ajouter matière
         </button>
       </div>
 
       <div className="mb-6">
-        <SearchBar onSearch={handleSearch} placeholder="Chercher par nom ou code..." />
+        <SearchBar onSearch={handleSearch} placeholder="Chercher par nom..." />
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -122,13 +118,15 @@ export default function MatieresPage() {
             <>
               <button
                 onClick={() => handleEdit(row)}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                className="font-semibold text-sm transition-colors"
+                style={{ color: '#2E7D32' }}
               >
                 ✏️ Modifier
               </button>
               <button
-                onClick={() => handleDelete(row.Id_Matière)}
-                className="text-red-600 hover:text-red-800 text-sm ml-2"
+                onClick={() => handleDelete(row.Id_MATIERE)}
+                className="font-semibold text-sm ml-2"
+                style={{ color: '#D84315' }}
               >
                 🗑️ Supprimer
               </button>
@@ -146,30 +144,9 @@ export default function MatieresPage() {
         <div className="space-y-4">
           <input
             type="text"
-            placeholder="Code matière"
-            value={formData.Code_Matière || ''}
-            onChange={(e) => setFormData({ ...formData, Code_Matière: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          />
-          <input
-            type="text"
             placeholder="Nom de la matière"
-            value={formData.Nom_Matière || ''}
-            onChange={(e) => setFormData({ ...formData, Nom_Matière: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          />
-          <input
-            type="number"
-            placeholder="Coefficient"
-            value={formData.Coefficient_Matière || ''}
-            onChange={(e) => setFormData({ ...formData, Coefficient_Matière: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          />
-          <input
-            type="text"
-            placeholder="Volume horaire"
-            value={formData.Volume_Horaire || ''}
-            onChange={(e) => setFormData({ ...formData, Volume_Horaire: e.target.value })}
+            value={formData.Nom_Matiere || ''}
+            onChange={(e) => setFormData({ ...formData, Nom_Matiere: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
           />
         </div>

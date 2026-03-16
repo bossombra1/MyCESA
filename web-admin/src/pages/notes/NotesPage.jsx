@@ -33,24 +33,22 @@ export default function NotesPage() {
     }
 
     const filtered = notes.filter(
-      (n) =>
-        n.Matricule_Etudiant?.toLowerCase().includes(query.toLowerCase()) ||
-        n.Matière?.toLowerCase().includes(query.toLowerCase())
-    );
+  (n) =>
+    n.Matricule_Etudiant?.toLowerCase().includes(query.toLowerCase()) ||
+    n.Nom_Matiere?.toLowerCase().includes(query.toLowerCase())
+);
     setFilteredNotes(filtered);
   };
 
   const columns = [
-    { key: 'Matricule_Etudiant', label: 'Matricule' },
-    { key: 'Nom_Etudiant', label: 'Étudiant' },
-    { key: 'Matière', label: 'Matière' },
-    { key: 'Note_Semestre1', label: 'S1', render: (row) => row.Note_Semestre1?.toFixed(2) || '-' },
-    { key: 'Note_Semestre2', label: 'S2', render: (row) => row.Note_Semestre2?.toFixed(2) || '-' },
-    { key: 'Moyenne', label: 'Moyenne', render: (row) => {
-      const moyenne = (row.Note_Semestre1 + row.Note_Semestre2) / 2;
-      return moyenne.toFixed(2);
-    } },
-  ];
+  { key: 'Matricule_Etudiant', label: 'Matricule' },
+  { key: 'Nom_Complet', label: 'Étudiant' },
+  { key: 'Nom_Matiere', label: 'Matière' },
+  { key: 'Semestre', label: 'Semestre' },
+  { key: 'Type_Evaluation', label: 'Type' },
+  { key: 'Note_Evaluation', label: 'Note', render: (row) => parseFloat(row.Note_Evaluation).toFixed(2) },
+  { key: 'Coef_Evaluation', label: 'Coeff', render: (row) => parseFloat(row.Coef_Evaluation).toFixed(2) },
+];
 
   if (loading)
     return (

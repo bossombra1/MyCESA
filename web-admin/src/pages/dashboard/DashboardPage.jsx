@@ -65,34 +65,37 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Tableau de bord</h1>
+    <div className="p-8 bg-light-bg min-h-screen">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-primary mb-2">Tableau de bord</h1>
+        <p className="text-gray-600">Bienvenue dans votre espace d'administration</p>
+      </div>
 
       {/* Cartes statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in">
         <Card
           title="Total Étudiants"
           value={stats.totalEtudiants}
           icon="👨‍🎓"
-          color="blue"
+          color="primary"
         />
         <Card
           title="Total Professeurs"
           value={stats.totalProfs}
           icon="👨‍🏫"
-          color="green"
+          color="success"
         />
         <Card
           title="Total Classes"
           value={stats.totalClasses}
           icon="🏫"
-          color="yellow"
+          color="secondary"
         />
         <Card
           title="Paiements ce mois"
           value={stats.paiementsMois}
           icon="💳"
-          color="red"
+          color="warning"
         />
       </div>
 

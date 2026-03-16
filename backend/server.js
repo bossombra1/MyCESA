@@ -32,6 +32,10 @@ app.use('/api/recompenses',  require('./routes/recompenses'));
 app.use('/api/evenements',   require('./routes/evenements'));
 app.use('/api/messagerie', require('./routes/messagerie'));
 app.use('/api/professeurs',   require('./routes/professeurs'));
+app.use('/api/notes',        require('./routes/notes'));
+app.use('/api/utilisateurs', require('./routes/utilisateurs'));
+app.use('/api/matieres',     require('./routes/matieres'));
+app.use('/api/salles', require('./routes/salles'));
 
 // Routes d'upload
 const uploadRoutes = require('./routes/upload');

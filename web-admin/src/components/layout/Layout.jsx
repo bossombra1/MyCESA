@@ -7,11 +7,11 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-light-bg">
       <Sidebar open={sidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-light-bg p-6">
           <Outlet />
         </main>
       </div>

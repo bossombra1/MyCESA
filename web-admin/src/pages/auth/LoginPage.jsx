@@ -40,16 +40,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 text-center">
-          <h1 className="text-3xl font-bold">MYCESA Admin</h1>
-          <p className="text-blue-100 mt-2">Gestion d'établissement scolaire</p>
+    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="bg-gradient-to-r from-primary via-primary-light to-primary-dark text-white p-8 text-center">
+          <h1 className="text-4xl font-bold tracking-tight">MYCESA</h1>
+          <p className="text-primary-light mt-1 text-sm">Portail d'Administration</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Identifiant
             </label>
             <input
@@ -57,7 +57,7 @@ export default function LoginPage() {
               value={login}
               onChange={(e) => setLogin(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-20 focus:border-primary transition"
               placeholder="Votre identifiant"
             />
           </div>
@@ -71,7 +71,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-20 focus:border-primary transition"
               placeholder="Votre mot de passe"
             />
           </div>
@@ -79,7 +79,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-lg transition-all duration-200 disabled:opacity-50 shadow-md hover:shadow-lg"
           >
             {loading ? 'Connexion en cours...' : 'Se connecter'}
           </button>

@@ -10,9 +10,7 @@ export default function PaiementsPage() {
   const [filteredPaiements, setFilteredPaiements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPaiements();
-  }, []);
+  useEffect(() => { fetchPaiements(); }, []);
 
   const fetchPaiements = async () => {
     try {
@@ -28,11 +26,7 @@ export default function PaiementsPage() {
   };
 
   const handleSearch = (query) => {
-    if (!query) {
-      setFilteredPaiements(paiements);
-      return;
-    }
-
+    if (!query) { setFilteredPaiements(paiements); return; }
     const filtered = paiements.filter(
       (p) =>
         p.Matricule_Etudiant?.toLowerCase().includes(query.toLowerCase()) ||
@@ -47,37 +41,36 @@ export default function PaiementsPage() {
       'Partiel': 'warning',
       'Impayé': 'danger',
     };
-    return <Badge variant={statusMap[status] || 'default'}>{status}</Badge>;
+    return <Badge variant={statusMap[status] || 'default'}>{status || 'Payé'}</Badge>;
   };
 
   const columns = [
     { key: 'Matricule_Etudiant', label: 'Matricule' },
-    { key: 'Nom_Etudiant', label: 'Étudiant' },
-    { key: 'Montant_Versement', label: 'Montant', render: (row) => `${row.Montant_Versement} DZD` },
-    { key: 'Date_Versement', label: 'Date', render: (row) => new Date(row.Date_Versement).toLocaleDateString() },
-    { key: 'Statut_Versement', label: 'Statut', render: (row) => getStatusBadge(row.Statut_Versement) },
+    { key: 'Nom_Etudiant', label: 'Étudiant', render: (row) => `${row.Nom_Etudiant} ${row.Prenoms_Etudiant || ''}` },
+    { key: 'Lib_Versement', label: 'Libellé' },
+    { key: 'Montant', label: 'Montant', render: (row) => `${parseFloat(row.Montant).toLocaleString()} FCFA` },
+    { key: 'Date_Versement', label: 'Date', render: (row) => new Date(row.Date_Versement).toLocaleDateString('fr-FR') },
+    { key: 'Statut', label: 'Statut', render: (row) => getStatusBadge(row.Statut) },
   ];
 
-  if (loading)
-    return (
-      <div className="p-8">
-        <div className="text-center text-gray-600">Chargement...</div>
-      </div>
-    );
+  if (loading) return <div className="p-8 text-center text-gray-600">Chargement...</div>;
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Gestion des paiements</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Paiements</h1>
+        <div className="px-4 py-2 rounded-xl text-white font-semibold"
+          style={{ background: 'linear-gradient(135deg, #2E7D32, #388E3C)' }}>
+          💰 Total : {paiements.reduce((sum, p) => sum + parseFloat(p.Montant || 0), 0).toLocaleString()} FCFA
+        </div>
+      </div>
 
       <div className="mb-6">
         <SearchBar onSearch={handleSearch} placeholder="Chercher par matricule ou nom..." />
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <Table
-          columns={columns}
-          data={filteredPaiements}
-        />
+        <Table columns={columns} data={filteredPaiements} />
       </div>
     </div>
   );
