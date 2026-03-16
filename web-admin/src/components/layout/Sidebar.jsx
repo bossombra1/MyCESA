@@ -13,6 +13,7 @@ const menuItems = [
   { path: '/paiements', label: 'Paiements', icon: '💳' },
   { path: '/utilisateurs', label: 'Utilisateurs', icon: '👥' },
   { path: '/notifications', label: 'Notifications', icon: '🔔' },
+  { path: '/absences', label: 'Absences', icon: '📋' },
 ];
 
 export default function Sidebar({ open }) {

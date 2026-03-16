@@ -10,27 +10,22 @@ export default function Modal({ isOpen, title, children, onClose, onSubmit, subm
         style={{ background: 'white' }}>
 
         {/* Header */}
-        <div className="px-6 py-4 flex justify-between items-center"
-          style={{ background: 'linear-gradient(135deg, #1B5E20, #2E7D32)' }}>
+        <div className="px-6 py-4 flex justify-between items-center bg-white border-b border-gray-100">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-              style={{ background: 'rgba(255,255,255,0.2)' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-green-700 font-bold bg-green-50">
               ✏️
             </div>
-            <h2 className="text-lg font-bold text-white">{title}</h2>
+            <h2 className="text-lg font-bold text-gray-800">{title}</h2>
           </div>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xl transition-all"
-            style={{ background: 'rgba(255,255,255,0.15)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(216,67,21,0.8)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}>
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 font-bold text-xl transition-all"
+          >
             ×
           </button>
         </div>
 
         {/* Contenu */}
-        <div className="px-6 py-5 max-h-96 overflow-y-auto"
-          style={{ background: '#FAFAFA' }}>
+        <div className="px-6 py-5 max-h-[70vh] overflow-y-auto modal-body bg-white">
           {children}
         </div>
 

@@ -6,14 +6,14 @@ export default function Table({ columns, data, onRowClick, actions }) {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col">
       <div className="overflow-y-auto max-h-96">
-        <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 text-white"
-style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
+        <table className="w-full border-collapse border-spacing-0">
+          <thead className="sticky top-0 z-10 text-white shadow-sm"
+            style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
+                  className="px-6 py-4 text-left text-sm font-bold tracking-wider uppercase whitespace-nowrap"
                   style={{ width: columnWidth }}
                 >
                   {col.label}
@@ -21,7 +21,7 @@ style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
               ))}
               {actions && (
                 <th
-                  className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
+                  className="px-6 py-4 text-left text-sm font-bold tracking-wider uppercase whitespace-nowrap"
                   style={{ width: columnWidth }}
                 >
                   Actions
@@ -44,10 +44,10 @@ style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => (
-                    <td
+                  <td
                       key={col.key}
-                     className="px-4 py-3 text-sm"
-style={{ color: '#1f2937' }}
+                     className="px-6 py-4 text-sm font-medium border-b border-gray-100"
+                      style={{ color: '#374151' }}
                      
                       title={col.render ? undefined : row[col.key]}
                     >
@@ -56,7 +56,7 @@ style={{ color: '#1f2937' }}
                   ))}
                   {actions && (
                     <td
-                      className="px-4 py-3 text-sm space-x-2"
+                      className="px-6 py-4 text-sm space-x-3 border-b border-gray-100"
                       style={{ width: columnWidth }}
                     >
                       {actions(row)}

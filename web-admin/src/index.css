@@ -13,7 +13,7 @@ html, body, #root {
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #F5F7F5;
+  background-color: #F0F4F8; /* Softer, slightly blueish gray for better contrast with white cards */
   color: #1F2937;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,7 +26,7 @@ body {
 #root {
   display: flex;
   flex-direction: column;
-  background: #F5F7F5;
+  background: #F0F4F8;
 }
 
 /* Styles de base */
@@ -165,4 +165,57 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* Modal Form Styles */
+.modal-body input[type="text"],
+.modal-body input[type="email"],
+.modal-body input[type="tel"],
+.modal-body input[type="number"],
+.modal-body input[type="password"],
+.modal-body input[type="date"],
+.modal-body input[type="time"],
+.modal-body select,
+.modal-body textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #F9FAFB;
+  border: 1px solid #D1D5DB;
+  color: #111827;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  margin-top: 0.25rem;
+}
+
+.modal-body input:hover,
+.modal-body select:hover,
+.modal-body textarea:hover {
+  border-color: #9CA3AF;
+}
+
+.modal-body input:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+  border-color: #2E7D32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
+  background-color: #FFFFFF;
+}
+
+/* Optional: styling the placeholder */
+.modal-body input::placeholder,
+.modal-body textarea::placeholder {
+  color: #9CA3AF;
+  opacity: 1;
+}
+
+/* Hide scrollbar for cleaner look if needed */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

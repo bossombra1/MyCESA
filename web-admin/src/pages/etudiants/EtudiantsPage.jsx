@@ -130,33 +130,51 @@ export default function EtudiantsPage() {
       <Modal isOpen={showModal}
         title={selectedEtudiant ? 'Modifier étudiant' : 'Ajouter étudiant'}
         onClose={() => setShowModal(false)} onSubmit={handleSave}>
-        <div className="space-y-4">
-          <input type="text" placeholder="Matricule"
-            value={formData.Matricule_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Matricule_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Nom"
-            value={formData.Nom_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Nom_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Prénoms"
-            value={formData.Prenoms_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Prenoms_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="email" placeholder="Email"
-            value={formData.Email_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Email_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="tel" placeholder="Téléphone"
-            value={formData.Tel_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Tel_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <select value={formData.Id_CLASSE || ''}
-            onChange={(e) => setFormData({ ...formData, Id_CLASSE: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-            <option value="">Sélectionner une classe</option>
-            {classes.map(c => <option key={c.Id_CLASSE} value={c.Id_CLASSE}>{c.Nom_Classe}</option>)}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Matricule</label>
+            <input type="text" placeholder="Entrez le matricule..."
+              value={formData.Matricule_Etudiant || ''}
+              onChange={(e) => setFormData({ ...formData, Matricule_Etudiant: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Nom</label>
+            <input type="text" placeholder="Entrez le nom..."
+              value={formData.Nom_Etudiant || ''}
+              onChange={(e) => setFormData({ ...formData, Nom_Etudiant: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Prénoms</label>
+            <input type="text" placeholder="Entrez les prénoms..."
+              value={formData.Prenoms_Etudiant || ''}
+              onChange={(e) => setFormData({ ...formData, Prenoms_Etudiant: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Email</label>
+            <input type="email" placeholder="exemple@mycesa.com"
+              value={formData.Email_Etudiant || ''}
+              onChange={(e) => setFormData({ ...formData, Email_Etudiant: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Téléphone</label>
+            <input type="tel" placeholder={"N° de téléphone..."}
+              value={formData.Tel_Etudiant || ''}
+              onChange={(e) => setFormData({ ...formData, Tel_Etudiant: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Classe</label>
+            <select value={formData.Id_CLASSE || ''}
+              onChange={(e) => setFormData({ ...formData, Id_CLASSE: e.target.value })}
+            >
+              <option value="">Sélectionner une classe</option>
+              {classes.map(c => <option key={c.Id_CLASSE} value={c.Id_CLASSE}>{c.Nom_Classe}</option>)}
+            </select>
+          </div>
         </div>
       </Modal>
     </div>

@@ -109,23 +109,35 @@ export default function ProfsPage() {
       </div>
       <Modal isOpen={showModal} title={selectedProf ? 'Modifier professeur' : 'Ajouter professeur'}
         onClose={() => setShowModal(false)} onSubmit={handleSave}>
-        <div className="space-y-4">
-          <input type="text" placeholder="Nom et prénoms"
-            value={formData.Nom_Prenoms_Profe || ''}
-            onChange={(e) => setFormData({ ...formData, Nom_Prenoms_Profe: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="email" placeholder="Email"
-            value={formData.email_Profe || ''}
-            onChange={(e) => setFormData({ ...formData, email_Profe: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="tel" placeholder="Téléphone"
-            value={formData.Tel_Profe || ''}
-            onChange={(e) => setFormData({ ...formData, Tel_Profe: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Quartier"
-            value={formData.Quartier_Profe || ''}
-            onChange={(e) => setFormData({ ...formData, Quartier_Profe: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Nom et prénoms</label>
+            <input type="text" placeholder="Ex: Jean Martin"
+              value={formData.Nom_Prenoms_Profe || ''}
+              onChange={(e) => setFormData({ ...formData, Nom_Prenoms_Profe: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Email</label>
+            <input type="email" placeholder="jean.martin@example.com"
+              value={formData.email_Profe || ''}
+              onChange={(e) => setFormData({ ...formData, email_Profe: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Téléphone</label>
+            <input type="tel" placeholder="N° de téléphone"
+              value={formData.Tel_Profe || ''}
+              onChange={(e) => setFormData({ ...formData, Tel_Profe: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Quartier</label>
+            <input type="text" placeholder="Quartier de résidence"
+              value={formData.Quartier_Profe || ''}
+              onChange={(e) => setFormData({ ...formData, Quartier_Profe: e.target.value })}
+            />
+          </div>
         </div>
       </Modal>
     </div>
