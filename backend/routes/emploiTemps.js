@@ -127,25 +127,47 @@ router.get('/etudiant/:id', auth, async (req, res) => {
 // POST ajouter un créneau
 router.post('/', auth, async (req, res) => {
   try {
-    const { Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut, Heure_Fin } = req.body;
+    const { Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut, Heure_Fin, date_ } = req.body;
 
     // Vérifier conflit de salle
-    const [conflitSalle] = await db.query(`
+    let conflitSalleQuery = `
       SELECT * FROM EMPLOI_TEMPS
-      WHERE Id_SALLE = ? AND Jour_Semaine = ?
-      AND NOT (Heure_Fin <= ? OR Heure_Debut >= ?)
-    `, [Id_SALLE, Jour_Semaine, Heure_Debut, Heure_Fin]);
+      WHERE Id_SALLE = ? AND Heure_Debut = ? AND Heure_Fin = ?
+    `;
+    let conflitSalleParams = [Id_SALLE, Heure_Debut, Heure_Fin];
+
+    if (date_) {
+      // Si date spécifique, vérifier conflit à cette date
+      conflitSalleQuery += ' AND DATE(date_) = ?';
+      conflitSalleParams.push(date_);
+    } else {
+      // Si pas de date spécifique, vérifier conflit pour le jour de la semaine
+      conflitSalleQuery += ' AND Jour_Semaine = ?';
+      conflitSalleParams.push(Jour_Semaine);
+    }
+
+    const [conflitSalle] = await db.query(conflitSalleQuery, conflitSalleParams);
 
     if (conflitSalle.length > 0) {
       return res.status(409).json({ error: 'Cette salle est déjà occupée à ce créneau !' });
     }
 
     // Vérifier conflit de professeur
-    const [conflitProf] = await db.query(`
+    let conflitProfQuery = `
       SELECT * FROM EMPLOI_TEMPS
-      WHERE Id_PROFESSEUR = ? AND Jour_Semaine = ?
-      AND NOT (Heure_Fin <= ? OR Heure_Debut >= ?)
-    `, [Id_PROFESSEUR, Jour_Semaine, Heure_Debut, Heure_Fin]);
+      WHERE Id_PROFESSEUR = ? AND Heure_Debut = ? AND Heure_Fin = ?
+    `;
+    let conflitProfParams = [Id_PROFESSEUR, Heure_Debut, Heure_Fin];
+
+    if (date_) {
+      conflitProfQuery += ' AND DATE(date_) = ?';
+      conflitProfParams.push(date_);
+    } else {
+      conflitProfQuery += ' AND Jour_Semaine = ?';
+      conflitProfParams.push(Jour_Semaine);
+    }
+
+    const [conflitProf] = await db.query(conflitProfQuery, conflitProfParams);
 
     if (conflitProf.length > 0) {
       return res.status(409).json({ error: 'Ce professeur a déjà un cours à ce créneau !' });
@@ -153,9 +175,9 @@ router.post('/', auth, async (req, res) => {
 
     await db.query(
       `INSERT INTO EMPLOI_TEMPS
-       (Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut, Heure_Fin)
-       VALUES (?,?,?,?,?,?,?)`,
-      [Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut, Heure_Fin]
+       (Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut, Heure_Fin, date_)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut, Heure_Fin, date_ || null]
     );
     res.status(201).json({ message: 'Créneau ajouté avec succès' });
   } catch (err) { res.status(500).json({ error: err.message }); }
