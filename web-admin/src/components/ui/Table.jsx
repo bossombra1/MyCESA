@@ -5,24 +5,24 @@ export default function Table({ columns, data, onRowClick, actions }) {
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden flex flex-col">
-      <div className="overflow-y-auto max-h-96">
-        <table className="w-full border-collapse">
+      <div className="overflow-x-auto overflow-y-auto max-h-96">
+        <table className="w-full border-collapse min-w-max">
           <thead className="sticky top-0 z-10 text-white"
-style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
+            style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
-                  style={{ width: columnWidth }}
+                  className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap"
+                  style={{ width: columnWidth, minWidth: '100px' }}
                 >
                   {col.label}
                 </th>
               ))}
               {actions && (
                 <th
-                  className="px-4 py-3 text-left text-sm font-semibold whitespace-nowrap"
-                  style={{ width: columnWidth }}
+                  className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap sticky right-0 z-10"
+                  style={{ background: '#2E7D32', minWidth: '140px' }}
                 >
                   Actions
                 </th>
@@ -40,15 +40,14 @@ style={{ background: 'linear-gradient(to right, #2E7D32, #388E3C)' }}>
               data.map((row, idx) => (
                 <tr
                   key={idx}
-                  className="border-b border-gray-200 hover:bg-primary hover:bg-opacity-5 transition-all duration-200 cursor-pointer"
+                  className="border-b border-gray-200 hover:bg-primary hover:bg-opacity-5 transition-all duration-200"
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                     className="px-4 py-3 text-sm"
-style={{ color: '#1f2937' }}
-                     
+                      className="px-3 py-2 text-xs"
+                      style={{ color: '#1f2937' }}
                       title={col.render ? undefined : row[col.key]}
                     >
                       {col.render ? col.render(row) : row[col.key]}
@@ -56,8 +55,8 @@ style={{ color: '#1f2937' }}
                   ))}
                   {actions && (
                     <td
-                      className="px-4 py-3 text-sm space-x-2"
-                      style={{ width: columnWidth }}
+                      className="px-3 py-2 text-xs space-x-1 sticky right-0 z-10"
+                      style={{ background: '#FAFAFA' }}
                     >
                       {actions(row)}
                     </td>

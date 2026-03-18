@@ -35,7 +35,10 @@ app.use('/api/professeurs',   require('./routes/professeurs'));
 app.use('/api/notes',        require('./routes/notes'));
 app.use('/api/utilisateurs', require('./routes/utilisateurs'));
 app.use('/api/matieres',     require('./routes/matieres'));
-app.use('/api/salles', require('./routes/salles'));
+app.use('/api/enseigner',    require('./routes/enseigner'));
+app.use('/api/cycles',       require('./routes/cycles'));
+app.use('/api/filieres',     require('./routes/filieres'));
+app.use('/api/salles',       require('./routes/salles'));
 
 // Routes d'upload
 const uploadRoutes = require('./routes/upload');

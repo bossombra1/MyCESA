@@ -6,11 +6,11 @@ export default function Modal({ isOpen, title, children, onClose, onSubmit, subm
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
       style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="rounded-2xl shadow-2xl max-w-md w-full animate-fade-in overflow-hidden"
-        style={{ background: 'white' }}>
+      <div className="rounded-2xl shadow-2xl max-w-2xl w-full animate-fade-in overflow-hidden"
+        style={{ background: 'white', maxHeight: '90vh' }}>
 
         {/* Header */}
-        <div className="px-6 py-4 flex justify-between items-center"
+        <div className="px-8 py-5 flex justify-between items-center"
           style={{ background: 'linear-gradient(135deg, #1B5E20, #2E7D32)' }}>
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
@@ -29,13 +29,13 @@ export default function Modal({ isOpen, title, children, onClose, onSubmit, subm
         </div>
 
         {/* Contenu */}
-        <div className="px-6 py-5 max-h-96 overflow-y-auto"
-          style={{ background: '#FAFAFA' }}>
+        <div className="px-8 py-6 overflow-y-auto"
+          style={{ background: '#FAFAFA', maxHeight: 'calc(90vh - 130px)' }}>
           {children}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-end gap-3"
+        <div className="px-8 py-4 flex justify-end gap-3"
           style={{ background: 'white', borderTop: '1px solid #E5E7EB' }}>
           <button onClick={onClose}
             className="px-5 py-2 rounded-xl font-semibold text-sm transition-all"

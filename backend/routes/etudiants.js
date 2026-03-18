@@ -4,14 +4,15 @@ const router  = express.Router();
 const db      = require('../config/db');
 const auth    = require('../middleware/authMiddleware');
 
-// GET tous les étudiants (avec nom de classe)
+// GET tous les étudiants (avec nom de classe, filière et cycle)
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT e.*, c.Nom_Classe, f.Nom_Filiere
+      `SELECT e.*, c.Nom_Classe, f.Nom_Filiere, cy.Lib_Cycle
        FROM ETUDIANT e
        LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
        LEFT JOIN FILIERE f ON c.Id_FILIERE = f.Id_FILIERE
+       LEFT JOIN CYCLE_ cy ON f.Id_CYCLE = cy.Id_CYCLE
        ORDER BY e.Nom_Etudiant`
     );
     res.json(rows);
@@ -126,7 +127,7 @@ router.post('/', auth, async (req, res) => {
     const {
       Matricule_Etudiant, Nom_Etudiant, Prenoms_Etudiant, Genre_Etudiant,
       Tel_Etudiant, Email_Etudiant, Date_Naissance_Etudiant,
-      Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE
+      Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE, Id_FILIERE
     } = req.body;
 
     if (!Matricule_Etudiant || !Nom_Etudiant) {
@@ -137,11 +138,11 @@ router.post('/', auth, async (req, res) => {
       `INSERT INTO ETUDIANT
        (Matricule_Etudiant, Nom_Etudiant, Prenoms_Etudiant, Genre_Etudiant,
         Tel_Etudiant, Email_Etudiant, Date_Naissance_Etudiant,
-        Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE, Id_FILIERE)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [Matricule_Etudiant, Nom_Etudiant, Prenoms_Etudiant, Genre_Etudiant,
        Tel_Etudiant, Email_Etudiant, Date_Naissance_Etudiant,
-       Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE]
+       Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE, Id_FILIERE]
     );
     res.status(201).json({ message: 'Étudiant ajouté avec succès' });
   } catch (err) {
@@ -158,18 +159,18 @@ router.put('/:id', auth, async (req, res) => {
     const {
       Nom_Etudiant, Prenoms_Etudiant, Genre_Etudiant,
       Tel_Etudiant, Email_Etudiant, Date_Naissance_Etudiant,
-      Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE
+      Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE, Id_FILIERE
     } = req.body;
 
     await db.query(
       `UPDATE ETUDIANT SET
         Nom_Etudiant=?, Prenoms_Etudiant=?, Genre_Etudiant=?,
         Tel_Etudiant=?, Email_Etudiant=?, Date_Naissance_Etudiant=?,
-        Lieu_Naissance_Etudiant=?, Quartier_Etudiant=?, Id_CLASSE=?
+        Lieu_Naissance_Etudiant=?, Quartier_Etudiant=?, Id_CLASSE=?, Id_FILIERE=?
        WHERE Id_ETUDIANT=?`,
       [Nom_Etudiant, Prenoms_Etudiant, Genre_Etudiant,
        Tel_Etudiant, Email_Etudiant, Date_Naissance_Etudiant,
-       Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE,
+       Lieu_Naissance_Etudiant, Quartier_Etudiant, Id_CLASSE, Id_FILIERE,
        req.params.id]
     );
     res.json({ message: 'Étudiant modifié avec succès' });

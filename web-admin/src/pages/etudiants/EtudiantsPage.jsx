@@ -10,6 +10,8 @@ export default function EtudiantsPage() {
   const [etudiants, setEtudiants] = useState([]);
   const [filteredEtudiants, setFilteredEtudiants] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [cycles, setCycles] = useState([]);
+  const [filieres, setFilieres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -22,13 +24,17 @@ export default function EtudiantsPage() {
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [etudiantsRes, classesRes] = await Promise.all([
+      const [etudiantsRes, classesRes, cyclesRes, filieresRes] = await Promise.all([
         api.get('/etudiants'),
         api.get('/classes'),
+        api.get('/cycles'),
+        api.get('/filieres'),
       ]);
       setEtudiants(etudiantsRes.data);
       setFilteredEtudiants(etudiantsRes.data);
       setClasses(classesRes.data);
+      setCycles(cyclesRes.data || []);
+      setFilieres(filieresRes.data || []);
     } catch (error) {
       toast.error('Erreur lors du chargement');
     } finally {
@@ -89,8 +95,13 @@ export default function EtudiantsPage() {
     { key: 'Matricule_Etudiant', label: 'Matricule' },
     { key: 'Nom_Etudiant', label: 'Nom' },
     { key: 'Prenoms_Etudiant', label: 'Prénoms' },
+    { key: 'Genre_Etudiant', label: 'Genre' },
     { key: 'Email_Etudiant', label: 'Email' },
+    { key: 'Tel_Etudiant', label: 'Téléphone' },
+    { key: 'Quartier_Etudiant', label: 'Quartier' },
     { key: 'Nom_Classe', label: 'Classe' },
+    { key: 'Nom_Filiere', label: 'Filière' },
+    { key: 'Lib_Cycle', label: 'Cycle' },
   ];
 
   if (loading) return <div className="p-8 text-center text-gray-600">Chargement...</div>;
@@ -130,33 +141,129 @@ export default function EtudiantsPage() {
       <Modal isOpen={showModal}
         title={selectedEtudiant ? 'Modifier étudiant' : 'Ajouter étudiant'}
         onClose={() => setShowModal(false)} onSubmit={handleSave}>
-        <div className="space-y-4">
-          <input type="text" placeholder="Matricule"
-            value={formData.Matricule_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Matricule_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Nom"
-            value={formData.Nom_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Nom_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Prénoms"
-            value={formData.Prenoms_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Prenoms_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="email" placeholder="Email"
-            value={formData.Email_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Email_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="tel" placeholder="Téléphone"
-            value={formData.Tel_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Tel_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <select value={formData.Id_CLASSE || ''}
-            onChange={(e) => setFormData({ ...formData, Id_CLASSE: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-            <option value="">Sélectionner une classe</option>
-            {classes.map(c => <option key={c.Id_CLASSE} value={c.Id_CLASSE}>{c.Nom_Classe}</option>)}
-          </select>
+        <div className="max-h-96 overflow-y-auto space-y-6 p-2">
+          {/* Section Identité */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-300">👤 Identité</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Matricule</label>
+                <input type="text" placeholder="Matricule"
+                  value={formData.Matricule_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Matricule_Etudiant: e.target.value })}
+                  disabled={selectedEtudiant}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg disabled:bg-gray-100 disabled:cursor-not-allowed text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Genre</label>
+                <select value={formData.Genre_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Genre_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="">Sélectionner</option>
+                  <option value="Masculin">Masculin</option>
+                  <option value="Féminin">Féminin</option>
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
+                <input type="text" placeholder="Nom de l'étudiant"
+                  value={formData.Nom_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Nom_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Prénoms</label>
+                <input type="text" placeholder="Prénoms"
+                  value={formData.Prenoms_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Prenoms_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Section Contact */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-300">📞 Contact</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                <input type="email" placeholder="Email"
+                  value={formData.Email_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Email_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Téléphone</label>
+                <input type="tel" placeholder="+243 ..."
+                  value={formData.Tel_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Tel_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Quartier</label>
+                <input type="text" placeholder="Quartier de résidence"
+                  value={formData.Quartier_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Quartier_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Section Naissance */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-300">🎂 Naissance</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date de naissance</label>
+                <input type="date"
+                  value={formData.Date_Naissance_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Date_Naissance_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Lieu de naissance</label>
+                <input type="text" placeholder="Ville/Région"
+                  value={formData.Lieu_Naissance_Etudiant || ''}
+                  onChange={(e) => setFormData({ ...formData, Lieu_Naissance_Etudiant: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+            </div>
+          </div>
+
+          {/* Section Académique */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-300">🎓 Académique</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cycle</label>
+                <select value={formData.Id_CYCLE || ''}
+                  onChange={(e) => setFormData({ ...formData, Id_CYCLE: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="">Sélectionner un cycle</option>
+                  {cycles.map(cyc => <option key={cyc.Id_CYCLE} value={cyc.Id_CYCLE}>{cyc.Lib_Cycle}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Filière</label>
+                <select value={formData.Id_FILIERE || ''}
+                  onChange={(e) => setFormData({ ...formData, Id_FILIERE: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="">Sélectionner une filière</option>
+                  {filieres.map(fil => <option key={fil.Id_FILIERE} value={fil.Id_FILIERE}>{fil.Nom_Filiere}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Classe</label>
+                <select value={formData.Id_CLASSE || ''}
+                  onChange={(e) => setFormData({ ...formData, Id_CLASSE: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="">Sélectionner une classe</option>
+                  {classes.map(c => <option key={c.Id_CLASSE} value={c.Id_CLASSE}>{c.Nom_Classe}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </Modal>
     </div>

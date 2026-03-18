@@ -7,15 +7,35 @@ const auth    = require('../middleware/authMiddleware');
 // GET tous les professeurs
 router.get('/', auth, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT p.*, GROUP_CONCAT(m.Nom_Matiere SEPARATOR ', ') AS Matieres
-       FROM PROFESSEUR p
-       LEFT JOIN ENSEIGNER en ON p.Id_PROFESSEUR = en.Id_PROFESSEUR
-       LEFT JOIN MATIERE m   ON en.Id_MATIERE    = m.Id_MATIERE
-       GROUP BY p.Id_PROFESSEUR
-       ORDER BY p.Nom_Prenoms_Profe`
-    );
-    res.json(rows);
+    const sql = `
+      SELECT
+        p.*, 
+        COALESCE(GROUP_CONCAT(m.Nom_Matiere SEPARATOR ', '), '') AS Matieres,
+        CASE WHEN COUNT(m.Id_MATIERE) = 0
+          THEN JSON_ARRAY()
+          ELSE JSON_ARRAYAGG(JSON_OBJECT('id', m.Id_MATIERE, 'nom', m.Nom_Matiere))
+        END AS MatieresJSON
+      FROM PROFESSEUR p
+      LEFT JOIN ENSEIGNER en ON p.Id_PROFESSEUR = en.Id_PROFESSEUR
+      LEFT JOIN MATIERE m   ON en.Id_MATIERE    = m.Id_MATIERE
+      GROUP BY p.Id_PROFESSEUR
+      ORDER BY p.Nom_Prenoms_Profe
+    `;
+
+    const [rows] = await db.query(sql);
+
+    // Normalisation : s'assurer qu'on renvoie toujours un tableau MatieresArray
+    const normalized = rows.map((prof) => ({
+      ...prof,
+      Matieres: prof.Matieres || '',
+      MatieresArray: Array.isArray(prof.MatieresJSON) && prof.MatieresJSON.length
+        ? prof.MatieresJSON
+        : prof.Matieres
+          ? prof.Matieres.split(',').map((m) => m.trim()).filter(Boolean)
+          : [],
+    }));
+
+    res.json(normalized);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -36,11 +56,11 @@ router.post('/', auth, async (req, res) => {
     const { Nom_Prenoms_Profe, Tel_Profe, Quartier_Profe, email_Profe, Date_Naissance } = req.body;
     if (!Nom_Prenoms_Profe) return res.status(400).json({ error: 'Nom requis' });
 
-    await db.query(
+    const [result] = await db.query(
       'INSERT INTO PROFESSEUR (Nom_Prenoms_Profe, Tel_Profe, Quartier_Profe, email_Profe, Date_Naissance) VALUES (?,?,?,?,?)',
       [Nom_Prenoms_Profe, Tel_Profe, Quartier_Profe, email_Profe, Date_Naissance]
     );
-    res.status(201).json({ message: 'Professeur ajouté' });
+    res.status(201).json({ message: 'Professeur ajouté', insertId: result.insertId });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

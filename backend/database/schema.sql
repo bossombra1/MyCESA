@@ -128,7 +128,9 @@ CREATE TABLE ETUDIANT (
   Quartier_Etudiant          VARCHAR(100),
   Image_Etudiant             VARCHAR(255),
   Id_CLASSE                  INT,
-  FOREIGN KEY (Id_CLASSE) REFERENCES CLASSE(Id_CLASSE)
+  Id_FILIERE                 INT,
+  FOREIGN KEY (Id_CLASSE) REFERENCES CLASSE(Id_CLASSE),
+  FOREIGN KEY (Id_FILIERE) REFERENCES FILIERE(Id_FILIERE) ON DELETE SET NULL
 );
 
 -- ============================================================

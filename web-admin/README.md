@@ -1,172 +1,337 @@
-# 🖥️ MyCESA - Interface Web Admin
+# 🖥️ MyCESA - Interface d'Administration Web
 
-Interface d'administration pour le système de gestion d'établissement scolaire MyCESA.
+Interface web moderne et complète pour l'administration du système de gestion d'établissement scolaire **MyCESA**. Cette application permet aux administrateurs de gérer facilement tous les aspects de l'établissement : étudiants, professeurs, classes, notes, paiements, emplois du temps, et bien plus.
 
 ## 🚀 Démarrage rapide
 
 ### Prérequis
-- Node.js 16+ 
-- npm ou yarn
-- Backend MyCESA en cours d'exécution sur `http://localhost:5000`
+- **Node.js** 16+ 
+- **npm** ou **yarn**
+- **Backend MyCESA** en cours d'exécution sur `http://localhost:5000`
 
 ### Installation
 
 ```bash
-# Installer les dépendances
+# 1. Installer les dépendances
 npm install
 
-# Créer le fichier .env local
+# 2. Copier le fichier d'environnement
 cp .env.example .env.local
 
-# Démarrer le serveur de développement
+# 3. Vérifier l'URL API dans .env.local
+# VITE_API_URL=http://localhost:5000/api
+
+# 4. Démarrer le serveur de développement
 npm run dev
 ```
 
-L'application sera disponible sur `http://localhost:5173`
+L'application sera disponible sur **`http://localhost:5173`** 🎉
 
 ### Build pour production
 
 ```bash
+# Compiler l'application
 npm run build
+
+# Tester le build localement
 npm run preview
 ```
 
-## 📋 Structure du projet
+## 
+ Structure du projet
 
 ```
 web-admin/
 ├── src/
-│   ├── pages/              # Pages principales
-│   │   ├── auth/           # Pages authentification
-│   │   ├── dashboard/      # Tableau de bord
-│   │   ├── etudiants/      # Gestion étudiants
-│   │   ├── professeurs/    # Gestion professeurs
-│   │   ├── classes/        # Gestion classes
-│   │   ├── matieres/       # Gestion matières
-│   │   ├── emploiTemps/    # Emploi du temps
-│   │   ├── notes/          # Gestion notes
-│   │   ├── paiements/      # Gestion paiements
-│   │   ├── utilisateurs/   # Gestion utilisateurs
-│   │   └── notifications/  # Notifications
+│   ├── pages/                      # Pages de l'application
+│   │   ├── auth/                   # Authentification
+│   │   │   └── LoginPage.jsx       # Page de connexion admin
+│   │   │
+│   │   ├── dashboard/              # Tableau de bord
+│   │   │   └── DashboardPage.jsx   # Vue d'ensemble avec statistiques
+│   │   │
+│   │   ├── etudiants/              # Gestion des étudiants
+│   │   │   └── EtudiantsPage.jsx   # CRUD complet (✅ Implémenté)
+│   │   │
+│   │   ├── professeurs/            # Gestion des professeurs
+│   │   │   └── ProfsPage.jsx       # CRUD complet (✅ Implémenté)
+│   │   │
+│   │   ├── classes/                # Gestion des classes
+│   │   │   └── ClassesPage.jsx     # CRUD complet (✅ Implémenté)
+│   │   │
+│   │   ├── matieres/               # Gestion des matières
+│   │   │   └── MatieresPage.jsx    # CRUD complet (✅ Implémenté)
+│   │   │
+│   │   ├── emploiTemps/            # Emplois du temps
+│   │   │   └── EmploiTempsPage.jsx # Gestion calendaire (⏳ En développement)
+│   │   │
+│   │   ├── notes/                  # Gestion des notes
+│   │   │   └── NotesPage.jsx       # Visualisation et saisie (⏳ En développement)
+│   │   │
+│   │   ├── paiements/              # Gestion des paiements
+│   │   │   └── PaiementsPage.jsx   # Suivi des versements (⏳ En développement)
+│   │   │
+│   │   ├── utilisateurs/           # Gestion des utilisateurs
+│   │   │   └── UtilisateursPage.jsx # Gestion des comptes (⏳ En développement)
+│   │   │
+│   │   └── notifications/          # Gestion des notifications
+│   │       └── NotificationsPage.jsx # Notifications système (⏳ En développement)
 │   │
-│   ├── components/         # Composants réutilisables
-│   │   ├── layout/         # Layout principal
-│   │   ├── ui/             # Composants UI
-│   │   └── charts/         # Graphiques
+│   ├── components/                 # Composants réutilisables
+│   │   ├── layout/
+│   │   │   ├── Layout.jsx          # Layout principal avec sidebar
+│   │   │   ├── Navbar.jsx          # Barre de navigation
+│   │   │   └── Sidebar.jsx         # Menu latéral de navigation
+│   │   │
+│   │   ├── ui/                     # Composants UI génériques
+│   │   │   ├── Table.jsx           # Tableau de données
+│   │   │   ├── SearchBar.jsx       # Barre de recherche
+│   │   │   ├── Pagination.jsx      # Pagination
+│   │   │   ├── Modal.jsx           # Fenêtres modales
+│   │   │   ├── Button.jsx          # Boutons stylisés
+│   │   │   ├── Input.jsx           # Champs de formulaire
+│   │   │   ├── Card.jsx            # Cartes de contenu
+│   │   │   └── LoadingSpinner.jsx  # Indicateur de chargement
+│   │   │
+│   │   ├── charts/                 # Composants graphiques
+│   │   │   └── Charts.jsx          # Graphiques estadistiques (Recharts)
+│   │   │
+│   │   └── ProtectedRoute.jsx      # Wrapper pour routes protégées
 │   │
-│   ├── context/            # Contextes React
-│   │   └── AuthContext.jsx # Gestion authentification
+│   ├── context/                    # Contextes React
+│   │   └── AuthContext.jsx         # Gestion de l'authentification
 │   │
-│   ├── api/                # Configuration API
-│   │   └── api.js          # Axios avec intercepteurs
+│   ├── api/                        # Configuration API
+│   │   └── api.js                  # Instance Axios avec intercepteurs
 │   │
-│   └── App.jsx             # Routeur principal
+│   ├── App.jsx                     # Composant racine et routeur
+│   ├── main.jsx                    # Point d'entrée React
+│   ├── index.css                   # Styles globaux
+│   └── App.css                     # Styles de l'app
 │
-├── .env.example            # Variables d'environnement
-├── tailwind.config.js      # Configuration Tailwind CSS
-└── package.json
+├── public/                         # Ressources publiques statiques
+├── .env.example                    # Exemple de variables d'environnement
+├── vite.config.js                  # Configuration Vite
+├── tailwind.config.js              # Configuration Tailwind CSS
+├── postcss.config.js               # Configuration PostCSS
+├── eslint.config.js                # Configuration ESLint
+├── package.json                    # Dépendances du projet
+└── index.html                      # Point d'entrée HTML
 ```
 
 ## 🔐 Authentification
 
-L'application utilise JWT (JSON Web Token) pour l'authentification. Le token est stocké dans localStorage et envoyé automatiquement dans les headers de chaque requête API.
+L'application utilise **JWT (JSON Web Token)** pour sécuriser l'accès aux données.
 
-### Accès admin
+### Fonctionnement
+- Les identifiants sont envoyés à l'endpoint `/auth/login`
+- Un token JWT est retourné et stocké dans `localStorage`
+- Le token est automatiquement inclus dans les headers de chaque requête API
+- L'expiration du token redirige automatiquement vers la page de connexion
 
-- L'accès est réservé aux utilisateurs avec `Id_ROLE = 1` (Administrateur)
-- Les identifiants sont dans le fichier `../comment VOIR les utilisateur et leur mot de passe.txt`
+### Accès administrateur
+- L'accès est réservé aux utilisateurs avec **`Id_ROLE = 1`** (Administrateur)
+- Les identifiants par défaut se trouvent dans : **`../comment VOIR les utilisateur et leur mot de passe.txt`**
 
-## 🎨 Styling
+### Fonction de déconnexion
+- Supprime le token stocké
+- Redirige vers la page de connexion
+- Tous les appels API suivants demandent une nouvelle authentification
 
-Le projet utilise **Tailwind CSS** pour le styling. La configuration se trouve dans `tailwind.config.js`.
+## 🎨 Design & Styling
 
-### Couleurs personnalisées
+L'application utilise **Tailwind CSS v4** pour un design moderne et responsive.
 
-- `primary`: #3B82F6 (Bleu)
-- `secondary`: #10B981 (Vert)
-- `danger`: #EF4444 (Rouge)
-- `warning`: #F59E0B (Amber)
-- `dark`: #1F2937 (Gris foncé)
+### Palette de couleurs
+```
+• Primaire (Bleu)     : #3B82F6
+• Secondaire (Vert)   : #10B981
+• Danger (Rouge)      : #EF4444
+• Warning (Amber)     : #F59E0B
+• Neutre (Gris)       : #6B7280
+• Foncé               : #1F2937
+• Clair               : #F9FAFB
+```
 
-## 📦 Packages utilisés
+### Responsive Design
+- Adapté pour desktop, tablettes et mobiles
+- Navigation mobile avec menu collapser
+- Tableaux scrollables sur petit écran
 
-- **React 19**: Framework UI
-- **React Router**: Navigation
-- **Axios**: Client HTTP
-- **Tailwind CSS**: Styling
-- **Recharts**: Graphiques
-- **React Hot Toast**: Notifications
-- **Headless UI**: Composants accessibles
+## 📦 Dépendances principales
+
+| Package | Version | Utilisation |
+|---------|---------|-------------|
+| **React** | ^19.2.4 | Framework UI |
+| **React Router DOM** | ^7.13.1 | Navigation client |
+| **Axios** | ^1.13.6 | Requêtes HTTP |
+| **Recharts** | ^3.8.0 | Graphiques & statistiques |
+| **Tailwind CSS** | ^4.2.1 | Styling CSS |
+| **Headless UI** | ^2.2.9 | Composants accessibles |
+| **React Hot Toast** | ^2.6.0 | Notifications toast |
+| **Vite** | ^8.0.0 | Bundler & dev server |
+
+> Pour des détails complets, consultez [package.json](package.json)
 
 ## 🛠️ Configuration API
 
-L'URL de base de l'API est configurée dans `.env`:
+### Variables d'environnement
 
-```
+```env
+# .env.local
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Pour développement local avec un proxy différent, modifiez cette variable.
+L'URL peut être modifiée selon votre environnement :
+- **Développement** : `http://localhost:5000/api`
+- **Staging** : `https://staging-api.mycesa.com/api`
+- **Production** : `https://api.mycesa.com/api`
 
-## 📝 Pages implémentées
+### Configuration Axios
 
-✅ **LoginPage** - Authentification admin
-✅ **DashboardPage** - Tableau de bord avec statistiques
-✅ **EtudiantsPage** - Gestion complète des étudiants (CRUD)
-⏳ Autres pages en cours de développement...
+Le fichier `src/api/api.js` configure Axios avec :
+- ✅ Interception des requêtes (ajout du token)
+- ✅ Interception des réponses (gestion des erreurs)
+- ✅ Retry automatique en cas d'échec
+- ✅ Gestion des tokens expirés
 
-## 🔄 Routes API utilisées
+## 📋 Pages implémentées
 
-Le backend expose les endpoints suivants sur `/api`:
+### ✅ Complètement implémentées
+| Page | URL | Description |
+|------|-----|-------------|
+| **Login** | `/login` | Authentification admin, formulaire sécurisé |
+| **Dashboard** | `/` | Tableau de bord avec statistiques en temps réel |
+| **Étudiants** | `/etudiants` | CRUD complet, recherche, filtres, pagination |
+| **Professeurs** | `/profs` | CRUD complet, gestion des matières |
+| **Classes** | `/classes` | CRUD complet, assignation étudiants |
+| **Matières** | `/matieres` | CRUD complet, liées aux professeurs |
+
+### ⏳ En développement
+| Page | URL | Description |
+|------|-----|-------------|
+| **Emploi du temps** | `/emploi` | Calendrier interactif des cours |
+| **Notes** | `/notes` | Saisie et validation des notes |
+| **Paiements** | `/paiements` | Suivi des versements étudiants |
+| **Utilisateurs** | `/utilisateurs` | Gestion des comptes système |
+| **Notifications** | `/notifications` | Centre de notifications |
+
+## 🔌 Routes API utilisées
+
+Consultez le fichier [API_ROUTES.md](API_ROUTES.md) pour la documentation complète des endpoints.
+
+### Principaux endpoints
 
 ```
-POST   /auth/login                    # Authentification
-GET    /etudiants                     # Lister étudiants
-POST   /etudiants                     # Créer étudiant
-PUT    /etudiants/:id                 # Modifier étudiant
-DELETE /etudiants/:id                 # Supprimer étudiant
+POST   /auth/login               # Authentification
+GET    /auth/verify              # Vérifier token
 
-GET    /professeurs                   # Lister profs
-POST   /professeurs                   # Créer prof
-PUT    /professeurs/:id               # Modifier prof
-DELETE /professeurs/:id               # Supprimer prof
+GET    /etudiants                # Lister tous les étudiants
+POST   /etudiants                # Créer un étudiant
+PUT    /etudiants/:id            # Modifier un étudiant
+DELETE /etudiants/:id            # Supprimer un étudiant
 
-GET    /classes                       # Lister classes
-POST   /classes                       # Créer classe
-PUT    /classes/:id                   # Modifier classe
-DELETE /classes/:id                   # Supprimer classe
+GET    /professeurs              # Lister tous les professeurs
+POST   /professeurs              # Créer un professeur
+PUT    /professeurs/:id          # Modifier un professeur
+DELETE /professeurs/:id          # Supprimer un professeur
 
-# et plus...
+GET    /classes                  # Lister toutes les classes
+POST   /classes                  # Créer une classe
+PUT    /classes/:id              # Modifier une classe
+DELETE /classes/:id              # Supprimer une classe
+
+GET    /matieres                 # Lister toutes les matières
+POST   /matieres                 # Créer une matière
+PUT    /matieres/:id             # Modifier une matière
+DELETE /matieres/:id             # Supprimer une matière
 ```
+
+> Pour les autres endpoints (emploi du temps, notes, paiements, etc.), consultez [API_ROUTES.md](API_ROUTES.md)
 
 ## 🚨 Dépannage
 
-### Erreur CORS
-- Vérifiez que le backend a CORS activé
-- Vérifiez l'URL de base avec `VITE_API_URL`
+### ❌ Erreur: "Cannot reach API"
+**Solution:**
+- Vérifiez que le backend est en cours d'exécution sur le port 5000
+- Vérifiez la variable `VITE_API_URL` dans `.env.local`
+- Testez la connexion : `curl http://localhost:5000/api/auth/login`
 
-### Token expiré
-- L'utilisateur sera automatiquement redirigé vers la page de connexion
-- Le token est stocké et réutilisé après rechargement
+### ❌ Erreur: "CORS error"
+**Solution:**
+- Vérifiez que CORS est activé dans le backend
+- Vérifiez que `http://localhost:5173` est autorisé dans la config CORS du backend
 
-### Erreur 401 Unauthorized
-- Vérifiez que le token JWT est valide
-- Reconnectez-vous via la page de login
+### ❌ Erreur: "401 Unauthorized"
+**Solution:**
+- Le token JWT a peut-être expiré → reconnectez-vous
+- Vérifiez que vous avez un rôle administrateur (`Id_ROLE = 1`)
+- Videz le localStorage : `localStorage.clear()`
 
-## 📞 Support
+### ❌ Erreur: "Blank white page"
+**Solution:**
+- Ouvrez la console de navigateur (F12) et vérifiez les erreurs
+- Vérifiez que Node.js et npm sont à jour
+- Supprimez `node_modules` et `package-lock.json`, puis relancez `npm install`
 
-Pour les problèmes, consultez:
-- Le backend dans `../backend/`
-- Les logs de l'API pour les erreurs côté serveur
-- La console du navigateur pour les erreurs client
+### ⚠️ Page se recharge après login
+**Solution:**
+- Vérifiez que le token est bien stocké dans localStorage
+- Vérifiez que le contexte `AuthContext` fournit correctement l'utilisateur
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### ⚠️ Données ne se chargent pas
+**Solution:**
+- Vérifiez dans DevTools → Network que les requêtes API sont envoyées
+- Vérifiez les logs du backend pour les erreurs
+- Assurez-vous que la base de données backend est accessible
 
-## React Compiler
+## 📚 Stack technique
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+Frontend Architecture
+├── État global      → React Context (Auth)
+├── Requêtes HTTP    → Axios + Intercepteurs
+├── Routage          → React Router v7
+├── UI Components    → React + Tailwind CSS
+├── Graphiques       → Recharts
+└── Notifications    → React Hot Toast
+```
 
-## Expanding the ESLint configuration
+## 🔄 Flux de développement
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+# Démarrer le développement
+npm run dev
+
+# Vérifier les erreurs ESLint
+npm run lint
+
+# Builder pour production
+npm run build
+
+# Prévisualiser la build production
+npm run preview
+```
+
+## 📞 Support & Ressources
+
+### Documentation
+- 📖 [Structure API complète](API_ROUTES.md)
+- 📖 [Résumé du projet](PROJECT_SUMMARY.md)
+- 📖 [Setup détaillé](SETUP.md)
+- 📖 [Présentation](PRESENTATION_COLLEGUES.md)
+
+### Repos connexes
+- 🔙 **Backend** : `../backend/` (Node.js Express + MySQL)
+- 📱 **Mobile** : `../mobile/` (React Native Expo)
+- 🗄️ **Base de données** : `../mycesa_db.sql`
+
+### Contacts
+Pour des questions ou problèmes :
+- Vérifiez d'abord la console du navigateur (F12)
+- Consultez les logs du backend sur le port 5000
+- Vérifiez la connexion Internet et la base de données
+
+---
+
+**MyCESA v1.0** | Interface Web Admin | 2024-2026
