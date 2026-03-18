@@ -157,23 +157,40 @@ CREATE TABLE VERSEMENT (
 );
 
 -- ============================================================
--- 14. EMPLOI_TEMPS
+-- 14. PERIODE_EMPLOI_TEMPS
+-- ============================================================
+CREATE TABLE PERIODE_EMPLOI_TEMPS (
+  Id_PERIODE      INT AUTO_INCREMENT PRIMARY KEY,
+  Id_CLASSE       INT NOT NULL,
+  Type_Periode    VARCHAR(50) NOT NULL,
+  Date_Debut      DATE NOT NULL,
+  Date_Fin        DATE NOT NULL,
+  Nom_Periode     VARCHAR(100),
+  Date_Creation   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (Id_CLASSE) REFERENCES CLASSE(Id_CLASSE) ON DELETE CASCADE,
+  UNIQUE KEY unique_periode (Id_CLASSE, Type_Periode, Date_Debut)
+);
+
+-- ============================================================
+-- 15. EMPLOI_TEMPS
 -- ============================================================
 CREATE TABLE EMPLOI_TEMPS (
   Id_PROFESSEUR  INT,
   Id_SALLE       INT,
   Id_MATIERE     INT,
   Id_CLASSE      INT,
+  Id_PERIODE     INT,
   IdEmploi_Temps VARCHAR(50),
   date_          DATETIME,
   Heure_Debut    TIME,
   Heure_Fin      TIME,
   Jour_Semaine   VARCHAR(20),
-  PRIMARY KEY (Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE),
+  PRIMARY KEY (Id_PROFESSEUR, Id_SALLE, Id_MATIERE, Id_CLASSE, Jour_Semaine, Heure_Debut),
   FOREIGN KEY (Id_PROFESSEUR) REFERENCES PROFESSEUR(Id_PROFESSEUR),
   FOREIGN KEY (Id_SALLE)      REFERENCES SALLE(Id_SALLE),
   FOREIGN KEY (Id_MATIERE)    REFERENCES MATIERE(Id_MATIERE),
-  FOREIGN KEY (Id_CLASSE)     REFERENCES CLASSE(Id_CLASSE)
+  FOREIGN KEY (Id_CLASSE)     REFERENCES CLASSE(Id_CLASSE),
+  FOREIGN KEY (Id_PERIODE)    REFERENCES PERIODE_EMPLOI_TEMPS(Id_PERIODE) ON DELETE CASCADE
 );
 
 -- ============================================================

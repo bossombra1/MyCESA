@@ -105,15 +105,21 @@ export default function ClassesPage() {
       </div>
       <Modal isOpen={showModal} title={selectedClass ? 'Modifier classe' : 'Ajouter classe'}
         onClose={() => setShowModal(false)} onSubmit={handleSave}>
-        <div className="space-y-4">
-          <input type="text" placeholder="Nom de la classe"
-            value={formData.Nom_Classe || ''}
-            onChange={(e) => setFormData({ ...formData, Nom_Classe: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-          <input type="number" placeholder="Effectif prévu"
-            value={formData.Effectif_Prevu_Etudiant || ''}
-            onChange={(e) => setFormData({ ...formData, Effectif_Prevu_Etudiant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+        <div className="grid grid-cols-1 gap-5">
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Nom de la classe</label>
+            <input type="text" placeholder="Ex: Licence 1 Informatique"
+              value={formData.Nom_Classe || ''}
+              onChange={(e) => setFormData({ ...formData, Nom_Classe: e.target.value })}
+            />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Effectif prévu</label>
+            <input type="number" placeholder="Ex: 30"
+              value={formData.Effectif_Prevu_Etudiant || ''}
+              onChange={(e) => setFormData({ ...formData, Effectif_Prevu_Etudiant: e.target.value })}
+            />
+          </div>
         </div>
       </Modal>
     </div>

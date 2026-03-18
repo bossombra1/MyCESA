@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
   return (
-    <div className="flex h-screen bg-light-bg">
-      <Sidebar open={sidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+    <div className="flex flex-col min-h-screen bg-light-bg">
+      {/* Top Navigation */}
+      <Navbar />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col justify-start overflow-hidden">
         <main className="flex-1 overflow-auto bg-light-bg p-6">
           <Outlet />
         </main>

@@ -22,7 +22,6 @@ export default function EmploiTempsPage() {
     Jour_Semaine: '',
     Heure_Debut: '',
     Heure_Fin: '',
-    date_: '', // Nouveau champ date
   });
 
   const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -69,7 +68,6 @@ export default function EmploiTempsPage() {
     );
   };
 
-  // Clic sur case vide → ajout avec jour et heure pré-remplis
   const handleCaseVide = (jour, heure) => {
     const heureIndex = heures.indexOf(heure);
     setEditMode(false);
@@ -82,12 +80,10 @@ export default function EmploiTempsPage() {
       Jour_Semaine: jour,
       Heure_Debut: heure,
       Heure_Fin: heuresFin[heureIndex] || '',
-      date_: '', // Laisser vide par défaut
     });
     setShowModal(true);
   };
 
-  // Clic sur créneau existant → modification
   const handleCreneauClick = (creneau) => {
     setEditMode(true);
     setCurrentCreneau(creneau);
@@ -99,7 +95,6 @@ export default function EmploiTempsPage() {
       Jour_Semaine: creneau.Jour_Semaine,
       Heure_Debut: creneau.Heure_Debut?.substring(0, 5),
       Heure_Fin: creneau.Heure_Fin?.substring(0, 5),
-      date_: creneau.date_ ? creneau.date_.substring(0, 10) : '', // Extraire YYYY-MM-DD
     });
     setShowModal(true);
   };
@@ -112,15 +107,14 @@ export default function EmploiTempsPage() {
       }
 
       if (editMode && currentCreneau) {
-        // ✅ On utilise currentCreneau pour supprimer EXACTEMENT l'ancien créneau
         await api.delete('/emploiTemps', {
           data: {
             Id_PROFESSEUR: currentCreneau.Id_PROFESSEUR,
             Id_SALLE: currentCreneau.Id_SALLE,
             Id_MATIERE: currentCreneau.Id_MATIERE,
             Id_CLASSE: currentCreneau.Id_CLASSE,
-            Jour_Semaine: currentCreneau.Jour_Semaine, // Précision indispensable
-            Heure_Debut: currentCreneau.Heure_Debut   // Précision indispensable
+            Jour_Semaine: currentCreneau.Jour_Semaine,
+            Heure_Debut: currentCreneau.Heure_Debut
           }
         });
         await api.post('/emploiTemps', formData);
@@ -148,8 +142,8 @@ export default function EmploiTempsPage() {
             Id_SALLE: currentCreneau.Id_SALLE,
             Id_MATIERE: currentCreneau.Id_MATIERE,
             Id_CLASSE: currentCreneau.Id_CLASSE,
-            Jour_Semaine: currentCreneau.Jour_Semaine, // Précision indispensable
-            Heure_Debut: currentCreneau.Heure_Debut   // Précision indispensable
+            Jour_Semaine: currentCreneau.Jour_Semaine,
+            Heure_Debut: currentCreneau.Heure_Debut
           }
         });
         toast.success('Créneau supprimé !');
@@ -309,20 +303,6 @@ export default function EmploiTempsPage() {
               <option value="">Sélectionner une salle</option>
               {salles.map(s => <option key={s.Id_SALLE} value={s.Id_SALLE}>{s.Nom_Salle}</option>)}
             </select>
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-gray-700">
-              Date spécifique (optionnel) 
-              <span className="text-xs text-gray-500 ml-2">Laissez vide pour cours récurrent</span>
-            </label>
-            <input
-              type="date"
-              value={formData.date_}
-              onChange={(e) => setFormData({ ...formData, date_: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg mt-1"
-              placeholder="YYYY-MM-DD"
-            />
           </div>
 
           {editMode && (

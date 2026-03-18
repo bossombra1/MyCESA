@@ -141,14 +141,16 @@ export default function MatieresPage() {
         onClose={() => setShowModal(false)}
         onSubmit={handleSave}
       >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Nom de la matière"
-            value={formData.Nom_Matiere || ''}
-            onChange={(e) => setFormData({ ...formData, Nom_Matiere: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          />
+        <div className="grid grid-cols-1 gap-5">
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">Nom de la matière</label>
+            <input
+              type="text"
+              placeholder="Ex: Mathématiques"
+              value={formData.Nom_Matiere || ''}
+              onChange={(e) => setFormData({ ...formData, Nom_Matiere: e.target.value })}
+            />
+          </div>
         </div>
       </Modal>
     </div>
