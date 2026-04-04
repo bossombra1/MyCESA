@@ -11,11 +11,12 @@
 
 ## 📱 À propos
 
-**MyCESA** est une **plateforme de gestion scolaire complète** développée pour le **GROUPE COFE-CESA** (Abidjan, Côte d'Ivoire). Elle offre une solution intégrée composée de trois applications:
+**MyCESA** est une **plateforme de gestion scolaire complète** développée pour le **GROUPE COFE-CESA** (Abidjan, Côte d'Ivoire). Elle offre une solution intégrée composée de quatre applications:
 
-1. **Application Mobile** 📱 - Pour les étudiants
-2. **Interface Web Admin** 🖥️ - Pour les administrateurs  
-3. **Backend API** 🔧 - Cœur du système
+1. **Application Mobile** 📱 - Pour les étudiants et professeurs
+2. **Interface Web Admin (React)** 🖥️ - Pour les administrateurs  
+3. **Interface Web Admin (Laravel)** 🖥️ - Version alternative en PHP/Laravel
+4. **Backend API** 🔧 - Cœur du système
 
 ### Objectifs
 ✅ Digitaliser la gestion scolaire  
@@ -53,6 +54,11 @@ MyCESA (Plateforme Complète)
 │   ├── Dashboard
 │   ├── Gestion complète des données
 │   └── Interface d'administration
+│
+├── 🖥️ MYCESA-ADMIN (Laravel + PHP)
+│   ├── Panel d'administration
+│   ├── Gestion des utilisateurs
+│   └── Interface alternative
 │
 └── 🔧 BACKEND API (Node.js + Express)
     ├── Authentification JWT
@@ -278,16 +284,16 @@ npm run web        # Lancer sur web
 
 L'application sera disponible via Expo Go.
 
-### 3. Interface Web Admin
+### 3. Interface Web Admin (React)
 
 ```bash
-# Naviguer au dossier web-admin
-cd web-admin
+# Naviguer au dossier web-admin-old
+cd web-admin-old
 
 # Installer les dépendances
 npm install
 
-# Creér le fichier .env.local
+# Créer le fichier .env.local
 cp .env.example .env.local
 
 # Démarrer le serveur de développement
@@ -296,7 +302,37 @@ npm run dev
 
 L'interface sera disponible sur: **http://localhost:5173**
 
-### Build pour production
+### 4. Interface Web Admin (Laravel)
+
+```bash
+# Naviguer au dossier mycesa-admin
+cd mycesa-admin
+
+# Installer les dépendances PHP
+composer install
+
+# Copier le fichier d'environnement
+cp .env.example .env
+
+# Générer la clé d'application
+php artisan key:generate
+
+# Configurer la base de données dans .env
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=mycesa
+# DB_USERNAME=root
+# DB_PASSWORD=votre_mot_de_passe
+
+# Exécuter les migrations
+php artisan migrate
+
+# Démarrer le serveur
+php artisan serve
+```
+
+L'interface sera disponible sur: **http://localhost:8000**
 
 ```bash
 # Backend
@@ -320,11 +356,15 @@ Pour démarrer le projet complet en développement:
 cd backend
 npm run dev
 
-# Terminal 2 - Web Admin
-cd web-admin
+# Terminal 2 - Web Admin (React)
+cd web-admin-old
 npm run dev
 
-# Terminal 3 - Mobile (optionnel)
+# Terminal 3 - Web Admin (Laravel) - Optionnel
+cd mycesa-admin
+php artisan serve
+
+# Terminal 4 - Mobile (optionnel)
 cd mobile
 npm start
 ```
@@ -451,7 +491,23 @@ MyCESA/
 │   ├── package.json
 │   └── README.md
 │
-├── 📊 mycesa_db.sql                    # Dump complet de la BD
+├── �️ mycesa-admin/                   # Interface Web Admin (Laravel)
+│   ├── app/
+│   │   ├── Http/
+│   │   ├── Models/
+│   │   └── Providers/
+│   ├── bootstrap/
+│   ├── config/
+│   ├── database/
+│   ├── public/
+│   ├── resources/
+│   ├── routes/
+│   ├── storage/
+│   ├── artisan
+│   ├── composer.json
+│   └── README.md
+│
+├── �📊 mycesa_db.sql                    # Dump complet de la BD
 ├── comment VOIR les utilisateur et leur mot de passe.txt
 ├── package.json                        # Root package (si applicable)
 └── README.md                           # Ce fichier
@@ -594,17 +650,14 @@ POST   /upload/photo            # Uploader une photo
 | **Expo Notifications** | 0.32.16 | Notifications push |
 | **Reanimated** | 4.1.1 | Animations fluides |
 
-### 🖥️ Web Admin (React + Vite)
+### 🖥️ Web Admin (Laravel)
 | Technologie | Version | Utilisation |
 |-------------|---------|-------------|
-| **React** | 19.2 | Framework UI |
-| **Vite** | 8.0 | Build tool |
-| **Tailwind CSS** | 4.2 | Styling |
-| **React Router** | 7.13 | Navigation |
-| **Axios** | 1.13.6 | Client HTTP |
-| **Recharts** | 3.8 | Graphiques |
-| **Headless UI** | 2.2.9 | Composants UI |
-| **React Hot Toast** | 2.6 | Notifications |
+| **Laravel** | 10.x | Framework PHP |
+| **PHP** | 8.1+ | Langage serveur |
+| **MySQL** | 5.7+ | Base de données |
+| **Blade** | - | Moteur de templates |
+| **Composer** | - | Gestionnaire de dépendances |
 
 ### 🔧 Backend (Node.js)
 | Technologie | Version | Utilisation |
@@ -656,13 +709,23 @@ UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=5242880
 ```
 
-### Variables d'environnement Web Admin
+### Variables d'environnement Web Admin (Laravel)
 
-Créer un fichier `.env.local` dans le dossier `web-admin/`:
+Créer un fichier `.env` dans le dossier `mycesa-admin/`:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
-VITE_APP_NAME=MyCESA Admin
+APP_NAME=MyCESA
+APP_ENV=local
+APP_KEY=base64:your_app_key
+APP_DEBUG=true
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mycesa
+DB_USERNAME=root
+DB_PASSWORD=votre_mot_de_passe
 ```
 
 ### Configuration Mobile
@@ -790,7 +853,8 @@ Avez-vous trouvé un bug? Svp créer une issue en détaillant:
 
 ### Version 1.0.0 (Actuelle)
 ✅ Application mobile complète (étudiants + profs)
-✅ Interface web admin complète
+✅ Interface web admin complète (React)
+✅ Interface web admin alternative (Laravel)
 ✅ API REST avec 18+ endpoints
 ✅ Authentification JWT
 ✅ Système de récompenses
@@ -798,6 +862,7 @@ Avez-vous trouvé un bug? Svp créer une issue en détaillant:
 ✅ Notifications en temps réel
 ✅ Base de données MySQL
 ✅ Socket.io pour communication temps réel
+✅ Documentation mise à jour
 
 ---
 

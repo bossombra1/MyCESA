@@ -4,6 +4,21 @@ const router  = express.Router();
 const db      = require('../config/db');
 const auth    = require('../middleware/authMiddleware');
 
+// GET toutes les absences (admin)
+router.get('/', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT a.*, e.Nom_Etudiant, e.Prenoms_Etudiant, e.Matricule_Etudiant,
+              u.Nom_User AS Saisie_Par
+       FROM ABSENTER a
+       JOIN ETUDIANT e ON a.Id_ETUDIANT = e.Id_ETUDIANT
+       LEFT JOIN UTILISATEUR u ON a.Id_UTILISATEUR = u.Id_UTILISATEUR
+       ORDER BY a.Date_absence DESC, e.Nom_Etudiant`
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET absences d'un étudiant
 router.get('/etudiant/:id', auth, async (req, res) => {
   try {

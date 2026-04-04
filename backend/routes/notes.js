@@ -5,10 +5,10 @@ const db = require('../config/db');
 router.get('/', async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT 
+      SELECT
         e.Matricule_Etudiant,
         CONCAT(e.Nom_Etudiant, ' ', e.Prenoms_Etudiant) AS Nom_Complet,
-        m.Nom_Matiere,
+        COALESCE(m.Nom_Matiere, 'Matière inconnue') AS Nom_Matiere,
         s.Lib_Sem AS Semestre,
         ev.Type_Evaluation,
         n.Note_Evaluation,
@@ -16,11 +16,12 @@ router.get('/', async (req, res) => {
       FROM notation n
       JOIN etudiant e ON n.Id_ETUDIANT = e.Id_ETUDIANT
       JOIN evaluation ev ON n.Id_EVALUATION = ev.Id_EVALUATION
-      JOIN semestre s ON ev.Id_SEMESTRE = s.Id_SEMESTRE
-      LEFT JOIN emploi_temps et ON et.Id_CLASSE = e.Id_CLASSE
-      LEFT JOIN matiere m ON et.Id_MATIERE = m.Id_MATIERE
-      GROUP BY e.Matricule_Etudiant, m.Nom_Matiere, ev.Type_Evaluation, s.Lib_Sem
-      ORDER BY e.Nom_Etudiant, m.Nom_Matiere
+      LEFT JOIN semestre s ON ev.Id_SEMESTRE = s.Id_SEMESTRE
+      LEFT JOIN matiere m ON m.Id_MATIERE = CAST(
+        SUBSTRING_INDEX(SUBSTRING_INDEX(ev.Lib_Evaluation, '_', 2), '_', -1) AS UNSIGNED
+      )
+      WHERE ev.Lib_Evaluation LIKE 'MAT_%'
+      ORDER BY e.Nom_Etudiant, m.Nom_Matiere, ev.Date_Evaluation ASC
     `);
     res.json(rows);
   } catch (error) {

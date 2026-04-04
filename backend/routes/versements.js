@@ -33,7 +33,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT v.*, e.Nom_Etudiant, e.Prenoms_Etudiant, e.Matricule_Etudiant,
-              vs.Lib_Versement, vs.Date_Versement
+              vs.Lib_Versement, vs.Montant_Total, vs.Date_Versement
        FROM VERSER v
        JOIN ETUDIANT e ON v.Id_ETUDIANT = e.Id_ETUDIANT
        JOIN VERSEMENT vs ON v.Id_VERSEMENT = vs.Id_VERSEMENT
@@ -72,6 +72,54 @@ router.post('/', auth, async (req, res) => {
     );
 
     res.status(201).json({ message: 'Paiement enregistré avec succès', Id_VERSEMENT });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET historique détaillé d'un étudiant (avec progression de paiement)
+router.get('/etudiant/detail/:Id_ETUDIANT', auth, async (req, res) => {
+  try {
+    const { Id_ETUDIANT } = req.params;
+
+    // Récupérer l'étudiant
+    const [etudiant] = await db.query(
+      `SELECT * FROM ETUDIANT WHERE Id_ETUDIANT = ?`,
+      [Id_ETUDIANT]
+    );
+
+    if (!etudiant.length) {
+      return res.status(404).json({ error: 'Étudiant non trouvé' });
+    }
+
+    // Récupérer tous les paiements de l'étudiant
+    const [paiements] = await db.query(
+      `SELECT v.*, vs.Lib_Versement, vs.Montant_Total, vs.Date_Versement
+       FROM VERSER v
+       JOIN VERSEMENT vs ON v.Id_VERSEMENT = vs.Id_VERSEMENT
+       WHERE v.Id_ETUDIANT = ?
+       ORDER BY vs.Date_Versement DESC`,
+      [Id_ETUDIANT]
+    );
+
+    // Calculer les montants
+    const montantDu = paiements.reduce((max, p) => Math.max(max, parseFloat(p.Montant_Total) || 0), 0);
+    const totalPayé = paiements.reduce((sum, p) => sum + (parseFloat(p.Montant) || 0), 0);
+    const reste = Math.max(0, montantDu - totalPayé);
+    const pourcentage = montantDu > 0 ? Math.round((totalPayé / montantDu) * 100) : 0;
+
+    // Récupérer l'historique
+    const [historique] = await db.query(
+      `SELECT * FROM HISTO_VERSEMENT WHERE Id_VERSEMENT IN 
+       (SELECT Id_VERSEMENT FROM VERSER WHERE Id_ETUDIANT = ?)
+       ORDER BY Date_Histo DESC`,
+      [Id_ETUDIANT]
+    );
+
+    res.json({
+      etudiant: etudiant[0],
+      paiements,
+      historique,
+      stats: { totalDû: montantDu, totalPayé, reste, pourcentage }
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -121,6 +121,23 @@ router.get('/matricule/:mat', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET étudiant par Id_ETUDIANT
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT e.*, c.Nom_Classe, f.Nom_Filiere, cy.Lib_Cycle
+       FROM ETUDIANT e
+       LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
+       LEFT JOIN FILIERE f ON c.Id_FILIERE = f.Id_FILIERE
+       LEFT JOIN CYCLE_ cy ON f.Id_CYCLE = cy.Id_CYCLE
+       WHERE e.Id_ETUDIANT = ?`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Étudiant introuvable' });
+    res.json(rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST ajouter un étudiant
 router.post('/', auth, async (req, res) => {
   try {
