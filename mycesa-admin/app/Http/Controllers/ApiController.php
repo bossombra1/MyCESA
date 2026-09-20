@@ -15,7 +15,27 @@ class ApiController extends Controller
                 'Accept'        => 'application/json',
                 'Content-Type'  => 'application/json',
             ])
-            ->baseUrl(env('NODE_API_URL', 'http://localhost:3000/api'));
+            ->baseUrl(env('NODE_API_URL'));
+    }
+
+    /**
+     * Client HTTP dédié aux envois de fichiers (multipart/form-data).
+     *
+     * On ne force surtout PAS l'en-tête Content-Type ici : Guzzle ne génère
+     * « multipart/form-data; boundary=... » que si aucun Content-Type n'est
+     * déjà défini (il l'ajoute en en-tête « conditionnel »). Un
+     * Content-Type: application/json explicite ferait donc partir un corps
+     * multipart étiqueté JSON, et le backend Node.js tenterait de le parser
+     * avec express.json() -> « Unexpected token '-', "--..." is not valid JSON ».
+     */
+    protected function apiMultipart(int $timeout = 120)
+    {
+        return Http::timeout($timeout)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . Session::get('jwt_token'),
+                'Accept'        => 'application/json',
+            ])
+            ->baseUrl(env('NODE_API_URL'));
     }
 
     /**
@@ -90,5 +110,44 @@ class ApiController extends Controller
     protected function handleApiError(\Exception $e, string $action = 'effectuer cette action')
     {
         return back()->with('error', "Impossible de {$action}. Verifiez que l'API est disponible.");
+    }
+
+    /**
+     * Envoie des données via POST.
+     */
+    protected function postData(string $endpoint, array $data = []): bool
+    {
+        try {
+            $response = $this->api()->post($endpoint, $data);
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Met à jour des données via PUT.
+     */
+    protected function putData(string $endpoint, array $data = []): bool
+    {
+        try {
+            $response = $this->api()->put($endpoint, $data);
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Supprime des données via DELETE.
+     */
+    protected function deleteData(string $endpoint): bool
+    {
+        try {
+            $response = $this->api()->delete($endpoint);
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

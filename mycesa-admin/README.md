@@ -1,58 +1,172 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MyCESA Admin
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Présentation
 
-## About Laravel
+MyCESA Admin est une interface d'administration web pour le système de gestion éducative MyCESA. Cette application permet aux administrateurs de gérer efficacement tous les aspects de l'établissement éducatif.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Fonctionnalités
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 📅 Gestion des Événements
+- Création, modification et suppression d'événements scolaires
+- Gestion des types d'événements (examens, cours, réunions, sorties, autres)
+- Ciblage par filière, classe ou établissement entier
+- Interface intuitive avec modales et formulaires dynamiques
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 👥 Gestion des Utilisateurs
+- Gestion des étudiants avec informations personnelles et académiques
+- Gestion des professeurs et de leurs attributions
+- Système d'authentification sécurisé
 
-## Learning Laravel
+### 🏫 Gestion Académique
+- Gestion des filières et classes
+- Gestion des matières enseignées
+- Gestion des emplois du temps
+- Suivi des évaluations et notes
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 📊 Tableaux de Bord
+- Interface d'administration complète
+- Statistiques et métriques en temps réel
+- Navigation intuitive avec sidebar
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Architecture Technique
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Frontend
+- **Framework** : Laravel 11
+- **UI Framework** : Bootstrap 5
+- **Langage** : PHP 8.x, Blade templating
+- **Styles** : CSS personnalisé avec Bootstrap
 
-## Agentic Development
+### Backend API
+- **Framework** : Node.js avec Express
+- **Base de données** : MySQL
+- **Authentification** : JWT (JSON Web Tokens)
+- **Architecture** : API RESTful
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Fonctionnalités Clés
+- Interface responsive et moderne
+- Gestion des rôles et permissions
+- API sécurisée avec authentification
+- Intégration temps réel des données
 
-```bash
-composer require laravel/boost --dev
+## Installation
 
-php artisan boost:install
+### Prérequis
+- PHP 8.1 ou supérieur
+- Composer
+- Node.js 16+ et npm
+- MySQL 8.0+
+- Git
+
+### Étapes d'installation
+
+1. **Cloner le repository**
+   ```bash
+   git clone <repository-url>
+   cd mycesa-admin
+   ```
+
+2. **Installer les dépendances PHP**
+   ```bash
+   composer install
+   ```
+
+3. **Configuration de l'environnement**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Configuration de la base de données**
+   - Créer une base de données MySQL
+   - Modifier les paramètres dans `.env`
+   - Exécuter les migrations si nécessaire
+
+5. **Démarrer l'application**
+   ```bash
+   php artisan serve
+   ```
+
+L'application sera accessible sur `http://localhost:8000`
+
+## Structure du Projet
+
+```
+mycesa-admin/
+├── app/
+│   ├── Http/Controllers/
+│   │   ├── Admin/
+│   │   │   └── EvenementAdminController.php
+│   │   └── EvenementController.php
+│   └── Models/
+├── resources/
+│   └── views/
+│       ├── layouts/
+│       │   └── admin.blade.php
+│       └── evenements/
+│           ├── index.blade.php
+│           └── _form.blade.php
+├── routes/
+│   └── web.php
+├── public/
+└── storage/
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## API Backend
 
-## Contributing
+L'application communique avec une API backend Node.js/Express située dans le dossier `../backend/`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Endpoints principaux
+- `GET /evenements` - Récupération des événements
+- `POST /evenements` - Création d'événement
+- `PUT /evenements/:id` - Modification d'événement
+- `DELETE /evenements/:id` - Suppression d'événement
+- `GET /filieres` - Liste des filières
+- `GET /classes` - Liste des classes
 
-## Code of Conduct
+## Développement
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Commandes utiles
+```bash
+# Démarrer le serveur de développement
+php artisan serve
 
-## Security Vulnerabilities
+# Vider le cache
+php artisan optimize:clear
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Générer des clés d'application
+php artisan key:generate
+```
 
-## License
+### Structure des Événements
+Les événements sont stockés avec les champs suivants :
+- `Id_Evenement` : Identifiant unique
+- `Titre` : Titre de l'événement
+- `Description` : Description détaillée
+- `Date_Evenement` : Date et heure de l'événement
+- `Type` : Type d'événement (examen, cours, réunion, etc.)
+- `Pour_Tous` : Booléen pour ciblage global
+- `Id_Filiere` : ID de la filière ciblée (optionnel)
+- `Id_Classe` : ID de la classe ciblée (optionnel)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Sécurité
+
+- Authentification JWT pour l'API
+- Validation des données côté serveur
+- Protection CSRF sur les formulaires
+- Sanitisation des entrées utilisateur
+
+## Contribution
+
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
+3. Commit les changements (`git commit -am 'Ajout nouvelle fonctionnalité'`)
+4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
+5. Créer une Pull Request
+
+## Licence
+
+Ce projet est sous licence MIT.
+
+## Support
+
+Pour toute question ou problème, veuillez contacter l'équipe de développement.

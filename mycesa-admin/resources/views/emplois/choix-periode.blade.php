@@ -45,6 +45,15 @@
                 @endforeach
             </div>
 
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Mois de départ</label>
+                    <input type="month" name="mois_reference" class="form-control"
+                           value="{{ now()->format('Y-m') }}">
+                    <div class="form-text">Pour « Par mois », les semaines lundi-samedi de ce mois seront proposées.</div>
+                </div>
+            </div>
+
             {{-- Classe --}}
             <div class="mb-4 pb-2 border-bottom">
                 <small class="text-uppercase fw-bold text-muted" style="letter-spacing:.08em;">

@@ -24,7 +24,16 @@ router.get('/etudiant/:id', auth, async (req, res) => {
       [etudiant[0].Id_ETUDIANT]
     );
     const totalPaye = rows.reduce((sum, r) => sum + (parseFloat(r.Montant) || 0), 0);
-    res.json({ paiements: rows, totalPaye });
+    const totalDu = rows.reduce(
+      (max, r) => Math.max(max, parseFloat(r.Montant_Total) || 0),
+      0
+    );
+    const reste = Math.max(0, totalDu - totalPaye);
+    const progression = totalDu > 0
+      ? Math.min((totalPaye / totalDu) * 100, 100)
+      : 0;
+
+    res.json({ paiements: rows, totalPaye, totalDu, reste, progression });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -73,6 +82,68 @@ router.post('/', auth, async (req, res) => {
 
     res.status(201).json({ message: 'Paiement enregistré avec succès', Id_VERSEMENT });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT modifier un versement + son lien étudiant
+router.put('/:id', auth, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    const { Id_ETUDIANT, Lib_Versement, Montant, Montant_Total } = req.body;
+
+    await connection.beginTransaction();
+    const [links] = await connection.query(
+      'SELECT Id_ETUDIANT, Id_VERSEMENT FROM VERSER WHERE Id_VERSEMENT = ?',
+      [req.params.id]
+    );
+    if (!links.length) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Versement introuvable' });
+    }
+
+    await connection.query(
+      'UPDATE VERSEMENT SET Lib_Versement = ?, Montant_Total = ? WHERE Id_VERSEMENT = ?',
+      [Lib_Versement, Montant_Total || Montant, req.params.id]
+    );
+    await connection.query(
+      'UPDATE VERSER SET Id_ETUDIANT = ?, Montant = ? WHERE Id_VERSEMENT = ?',
+      [Id_ETUDIANT || links[0].Id_ETUDIANT, Montant, req.params.id]
+    );
+
+    await connection.commit();
+    res.json({ message: 'Paiement modifié avec succès' });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    connection.release();
+  }
+});
+
+// DELETE supprimer un versement et son lien étudiant
+router.delete('/:id', auth, async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    await connection.query('DELETE FROM HISTO_VERSEMENT WHERE Id_VERSEMENT = ?', [req.params.id]);
+    await connection.query('DELETE FROM VERSER WHERE Id_VERSEMENT = ?', [req.params.id]);
+    const [result] = await connection.query(
+      'DELETE FROM VERSEMENT WHERE Id_VERSEMENT = ?',
+      [req.params.id]
+    );
+
+    if (!result.affectedRows) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Versement introuvable' });
+    }
+
+    await connection.commit();
+    res.json({ message: 'Paiement supprimé avec succès' });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    connection.release();
+  }
 });
 
 // GET historique détaillé d'un étudiant (avec progression de paiement)

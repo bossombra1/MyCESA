@@ -16,7 +16,7 @@ class MatiereController extends ApiController
     public function store(Request $request)
     {
         try {
-            $r = $this->api()->post('/matieres', $request->except('_token'));
+            $r = $this->api()->post('/matieres', $request->only('Nom_Matiere'));
             if ($r->successful()) return redirect()->route('matieres.index')->with('success', 'Matiere ajoutee.');
             return back()->with('error', $r->json()['message'] ?? 'Erreur.')->withInput();
         } catch (\Exception $e) { return $this->handleApiError($e, 'ajouter la matiere'); }
@@ -24,18 +24,22 @@ class MatiereController extends ApiController
 
     public function show($id)
     {
-        return view('matieres.show', ['matiere' => $this->getOne('/matieres/' . $id)]);
+        return view('matieres.show', [
+            'matiere' => $this->getOneFromList('/matieres', 'Id_MATIERE', $id),
+        ]);
     }
 
     public function edit($id)
     {
-        return view('matieres.edit', ['matiere' => $this->getOne('/matieres/' . $id)]);
+        return view('matieres.edit', [
+            'matiere' => $this->getOneFromList('/matieres', 'Id_MATIERE', $id),
+        ]);
     }
 
     public function update(Request $request, $id)
     {
         try {
-            $r = $this->api()->put('/matieres/' . $id, $request->except(['_token', '_method']));
+            $r = $this->api()->put('/matieres/' . $id, $request->only('Nom_Matiere'));
             if ($r->successful()) return redirect()->route('matieres.index')->with('success', 'Matiere modifiee.');
             return back()->with('error', $r->json()['message'] ?? 'Erreur.')->withInput();
         } catch (\Exception $e) { return $this->handleApiError($e, 'modifier la matiere'); }

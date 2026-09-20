@@ -20,6 +20,7 @@ const BOTTOM_ITEMS = [
 
 const MENU_ITEMS = [
   { label: 'Mes Notes', icon: '📝', screen: 'Notes' },
+  { label: 'Emplois reçus', icon: '📎', screen: 'EmploisRecus' },
   { label: 'Mes Absences', icon: '📅', screen: 'Absences' },
   { label: 'Mes Paiements', icon: '💰', screen: 'Paiements' },
   { label: 'Notifications', icon: '🔔', screen: 'Notifications' },

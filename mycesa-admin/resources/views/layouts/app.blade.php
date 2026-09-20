@@ -272,6 +272,16 @@
     </div>
 
     <div style="flex:1; padding: .5rem 0;">
+        @php
+            $sessionUser = session('user') ?? [];
+            $isAdmin = ($sessionUser['Id_ROLE'] ?? 0) == 1;
+            $notifRoute = $isAdmin
+                ? route('admin.notifications.index')
+                : route('notifications.index');
+            $notifRouteActive = $isAdmin
+                ? 'admin.notifications.index'
+                : 'notifications.index';
+        @endphp
 
         <div class="nav-section">Principal</div>
         <a href="{{ route('dashboard') }}" class="nav-link {{ Route::currentRouteName() == 'dashboard' ? 'active' : '' }}">
@@ -310,7 +320,7 @@
         <a href="{{ route('evenements.index') }}" class="nav-link {{ Route::currentRouteName() == 'evenements.index' ? 'active' : '' }}">
             <i class="bi bi-calendar-event-fill"></i> Événements
         </a>
-        <a href="{{ route('notifications.index') }}" class="nav-link {{ Route::currentRouteName() == 'notifications.index' ? 'active' : '' }}">
+        <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ Route::currentRouteName() == 'admin.notifications.index' ? 'active' : '' }}">
             <i class="bi bi-bell-fill"></i> Notifications
         </a>
         <a href="{{ route('utilisateurs.index') }}" class="nav-link {{ str_starts_with(Route::currentRouteName() ?? '', 'utilisateurs') ? 'active' : '' }}">
@@ -360,7 +370,7 @@
         </div>
         <div class="ms-auto d-flex align-items-center gap-3">
             <span class="text-muted small d-none d-md-inline" id="clock"></span>
-            <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-light position-relative">
+            <a href="{{ $notifRoute }}" class="btn btn-sm btn-light position-relative">
                 <i class="bi bi-bell"></i>
             </a>
         </div>

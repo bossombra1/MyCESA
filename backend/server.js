@@ -26,6 +26,7 @@ app.use('/api/evaluations',   require('./routes/evaluations'));
 app.use('/api/absences',      require('./routes/absences'));
 app.use('/api/versements',    require('./routes/versements'));
 app.use('/api/emploiTemps',   require('./routes/emploiTemps'));
+app.use('/api/emplois-du-temps', require('./routes/emploisDuTempsFichiers'));
 app.use('/api/chatbot',       require('./routes/chatbot'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/recompenses',  require('./routes/recompenses'));
@@ -39,6 +40,7 @@ app.use('/api/enseigner',    require('./routes/enseigner'));
 app.use('/api/cycles',       require('./routes/cycles'));
 app.use('/api/filieres',     require('./routes/filieres'));
 app.use('/api/salles',       require('./routes/salles'));
+app.use('/api',              require('./routes/referentiels')); // /sites, /semestres, /roles, /statistiques
 
 // Routes d'upload
 const uploadRoutes = require('./routes/upload');
@@ -50,6 +52,25 @@ app.get('/', (req, res) => {
 
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} introuvable` });
+});
+
+// Gestionnaire d'erreurs : l'API répond toujours en JSON, jamais en page HTML.
+app.use((error, _req, res, _next) => {
+  // Corps non-JSON envoyé alors que express.json() l'attend (ex. multipart mal étiqueté).
+  if (error?.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      error: 'Corps de requête illisible : un autre format que JSON a été envoyé (multipart/form-data attendu pour un envoi de fichier).',
+    });
+  }
+  if (error?.type === 'entity.too.large' || error?.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'Fichier ou corps de requête trop volumineux.' });
+  }
+  // Erreurs du filtre multer (type de fichier refusé).
+  if (error?.message === 'Type de fichier non autorise') {
+    return res.status(400).json({ error: error.message });
+  }
+  console.error('❌ Erreur serveur :', error);
+  res.status(error?.status || 500).json({ error: error?.message || 'Erreur serveur' });
 });
 
 io.on('connection', (socket) => {

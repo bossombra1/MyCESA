@@ -25,15 +25,28 @@ router.get('/', auth, async (req, res) => {
     const [rows] = await db.query(sql);
 
     // Normalisation : s'assurer qu'on renvoie toujours un tableau MatieresArray
-    const normalized = rows.map((prof) => ({
-      ...prof,
-      Matieres: prof.Matieres || '',
-      MatieresArray: Array.isArray(prof.MatieresJSON) && prof.MatieresJSON.length
-        ? prof.MatieresJSON
-        : prof.Matieres
-          ? prof.Matieres.split(',').map((m) => m.trim()).filter(Boolean)
-          : [],
-    }));
+    const normalized = rows.map((prof) => {
+      let matieresArray = prof.MatieresJSON;
+      if (typeof matieresArray === 'string') {
+        try { matieresArray = JSON.parse(matieresArray); } catch (_) { matieresArray = []; }
+      }
+      if (!Array.isArray(matieresArray) || !matieresArray.length) {
+        matieresArray = prof.Matieres
+          ? prof.Matieres.split(',').map((nom) => ({ nom: nom.trim() })).filter((matiere) => matiere.nom)
+          : [];
+      }
+
+      matieresArray = matieresArray.map((matiere) => ({
+        id: matiere.id ?? matiere.Id_MATIERE ?? null,
+        nom: matiere.nom ?? matiere.Nom_Matiere ?? '',
+      }));
+
+      return {
+        ...prof,
+        Matieres: prof.Matieres || '',
+        MatieresArray: matieresArray,
+      };
+    });
 
     res.json(normalized);
   } catch (err) { res.status(500).json({ error: err.message }); }

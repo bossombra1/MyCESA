@@ -7,7 +7,12 @@ const auth = require('../middleware/authMiddleware');
 // GET tous les cycles
 router.get('/', auth, async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT Id_CYCLE, Lib_Cycle FROM CYCLE_ ORDER BY Lib_Cycle');
+    const [rows] = await db.query(
+      `SELECT cy.Id_CYCLE, cy.Lib_Cycle, cy.Id_SITE, s.Nom_Site
+       FROM CYCLE_ cy
+       LEFT JOIN SITE s ON cy.Id_SITE = s.Id_SITE
+       ORDER BY cy.Lib_Cycle`
+    );
     res.json(rows);
   } catch (err) {
     console.error(err);

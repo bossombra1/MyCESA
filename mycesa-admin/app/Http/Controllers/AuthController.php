@@ -28,7 +28,10 @@ class AuthController extends Controller
         ]);
 
         try {
-            $apiUrl   = env('NODE_API_URL', 'http://localhost:8080/api');
+            $apiUrl   = env('NODE_API_URL');
+            if (!$apiUrl) {
+                throw new \RuntimeException('NODE_API_URL est requis.');
+            }
             $response = Http::timeout(10)->post($apiUrl . '/auth/login', [
                 'Login_User'    => $request->login,
                 'Password_User' => $request->password,
@@ -58,7 +61,9 @@ class AuthController extends Controller
                 return redirect()->route('dashboard')->with('success', 'Connexion reussie !');
             }
 
-            $errorMsg = $response->json()['message'] ?? 'Identifiants incorrects.';
+            $errorMsg = $response->json()['error']
+                ?? $response->json()['message']
+                ?? 'Identifiants incorrects.';
             return back()->withErrors(['login' => $errorMsg])->withInput();
 
         } catch (\Exception $e) {

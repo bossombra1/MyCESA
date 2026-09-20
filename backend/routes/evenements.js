@@ -107,4 +107,22 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// PUT mettre à jour un événement
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const { Titre, Description, Date_Evenement, Type, Id_Classe, Id_Filiere, Pour_Tous } = req.body;
+    if (!Titre || !Date_Evenement) return res.status(400).json({ error: 'Titre et date requis' });
+
+    await db.query(`
+      UPDATE EVENEMENT_ECOLE
+      SET Titre = ?, Description = ?, Date_Evenement = ?, Type = ?, Id_Classe = ?, Id_Filiere = ?, Pour_Tous = ?
+      WHERE Id_Evenement = ?
+    `, [Titre, Description || null, Date_Evenement, Type || 'examen', Id_Classe || null, Id_Filiere || null, Pour_Tous ? 1 : 0, req.params.id]);
+
+    res.json({ success: true, message: 'Événement mis à jour' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

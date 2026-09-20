@@ -190,4 +190,212 @@ router.put('/user/:id/lire-tout', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ── NOUVELLES ROUTES : SYSTÈME DE NOTIFICATIONS CIBLÉES ─────────────────
+
+// ── POST /notifications/send-cible ────────────────────────────
+router.post('/send-cible', auth, async (req, res) => {
+  try {
+    const { Titre_Notif, Message_Notif, Type, Cible,
+            Id_Filiere, Id_Classe, Id_Etudiant, Scheduled_At } = req.body;
+
+    // Validation
+    if (!Titre_Notif || !Message_Notif) {
+      return res.status(400).json({ error: 'Titre et message requis' });
+    }
+
+    // INSERT dans notification_contents
+    const [result] = await db.query(
+      `INSERT INTO notification_contents
+       (Titre_Notif, Message_Notif, Type, Cible, Id_Filiere, Id_Classe, Id_Etudiant, Scheduled_At, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [Titre_Notif, Message_Notif, Type || 'autre', Cible || 'tous',
+       Id_Filiere || null, Id_Classe || null, Id_Etudiant || null,
+       Scheduled_At || null, req.user.id]
+    );
+    const notificationId = result.insertId;
+
+    // Construire la liste des destinataires selon Cible
+    let recipients = [];
+    if (Cible === 'tous') {
+      const [rows] = await db.query('SELECT Id_UTILISATEUR FROM ETUDIANT');
+      recipients = rows.map(r => r.Id_UTILISATEUR);
+    } else if (Cible === 'filiere' && Id_Filiere) {
+      const [rows] = await db.query(
+        'SELECT Id_UTILISATEUR FROM ETUDIANT WHERE Id_Filiere = ?',
+        [Id_Filiere]
+      );
+      recipients = rows.map(r => r.Id_UTILISATEUR);
+    } else if (Cible === 'classe' && Id_Classe) {
+      const [rows] = await db.query(
+        'SELECT Id_UTILISATEUR FROM ETUDIANT WHERE Id_Classe = ?',
+        [Id_Classe]
+      );
+      recipients = rows.map(r => r.Id_UTILISATEUR);
+    } else if (Cible === 'etudiant' && Id_Etudiant) {
+      recipients = [Id_Etudiant];
+    }
+
+    // INSERT en masse dans notification_recipients
+    if (recipients.length > 0) {
+      const values = recipients.map(userId => `(${notificationId}, ${userId})`).join(', ');
+      await db.query(
+        `INSERT INTO notification_recipients (id_notification, Id_UTILISATEUR)
+         VALUES ${values}`
+      );
+    }
+
+    // Si pas programmé, marquer comme envoyé
+    if (!Scheduled_At) {
+      await db.query(
+        'UPDATE notification_contents SET Sent_At = NOW() WHERE id = ?',
+        [notificationId]
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      recipients_count: recipients.length,
+      notification_id: notificationId
+    });
+  } catch (err) {
+    console.error('Erreur send-cible:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /notifications/admin/liste ────────────────────────────
+router.get('/admin/liste', auth, async (req, res) => {
+  try {
+    // Vérification rôle admin (à adapter selon votre système de rôles)
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Accès admin requis' });
+    }
+
+    const [rows] = await db.query(
+      `SELECT nc.*, COUNT(nr.id) as total_recipients, SUM(nr.Lu) as total_lus
+       FROM notification_contents nc
+       LEFT JOIN notification_recipients nr ON nc.id = nr.id_notification
+       GROUP BY nc.id
+       ORDER BY nc.Date_Notif DESC`
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Erreur admin/liste:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /notifications/moi ────────────────────────────────────
+router.get('/moi', auth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = 20;
+    const offset = (page - 1) * pageSize;
+
+    const [rows] = await db.query(
+      `SELECT nc.id, nc.Titre_Notif, nc.Message_Notif, nc.Type, nc.Date_Notif,
+              nr.Lu, nr.Date_Lecture
+       FROM notification_recipients nr
+       JOIN notification_contents nc ON nr.id_notification = nc.id
+       WHERE nr.Id_UTILISATEUR = ? AND nc.Sent_At IS NOT NULL
+       ORDER BY nc.Date_Notif DESC
+       LIMIT ? OFFSET ?`,
+      [req.user.id, pageSize, offset]
+    );
+
+    // Vérifier s'il y a plus de résultats
+    const [countResult] = await db.query(
+      `SELECT COUNT(*) as total
+       FROM notification_recipients nr
+       JOIN notification_contents nc ON nr.id_notification = nc.id
+       WHERE nr.Id_UTILISATEUR = ? AND nc.Sent_At IS NOT NULL`,
+      [req.user.id]
+    );
+
+    const total = countResult[0].total;
+    const hasMore = (page * pageSize) < total;
+
+    res.json({
+      notifications: rows,
+      page: page,
+      hasMore: hasMore
+    });
+  } catch (err) {
+    console.error('Erreur /moi:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /notifications/moi/non-lues ───────────────────────────
+router.get('/moi/non-lues', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT COUNT(*) as count
+       FROM notification_recipients nr
+       JOIN notification_contents nc ON nr.id_notification = nc.id
+       WHERE nr.Id_UTILISATEUR = ? AND nr.Lu = 0 AND nc.Sent_At IS NOT NULL`,
+      [req.user.id]
+    );
+
+    res.json({ count: rows[0].count });
+  } catch (err) {
+    console.error('Erreur /moi/non-lues:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PUT /notifications/moi/:id/lire ───────────────────────────
+router.put('/moi/:id/lire', auth, async (req, res) => {
+  try {
+    await db.query(
+      `UPDATE notification_recipients
+       SET Lu = 1, Date_Lecture = NOW()
+       WHERE id_notification = ? AND Id_UTILISATEUR = ?`,
+      [req.params.id, req.user.id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur /moi/:id/lire:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PUT /notifications/moi/lire-tout ──────────────────────────
+router.put('/moi/lire-tout', auth, async (req, res) => {
+  try {
+    await db.query(
+      `UPDATE notification_recipients nr
+       JOIN notification_contents nc ON nr.id_notification = nc.id
+       SET nr.Lu = 1, nr.Date_Lecture = NOW()
+       WHERE nr.Id_UTILISATEUR = ? AND nr.Lu = 0 AND nc.Sent_At IS NOT NULL`,
+      [req.user.id]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur /moi/lire-tout:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE /notifications/admin/:id ───────────────────────────
+router.delete('/admin/:id', auth, async (req, res) => {
+  try {
+    // Vérification rôle admin
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Accès admin requis' });
+    }
+
+    await db.query('DELETE FROM notification_contents WHERE id = ?', [req.params.id]);
+    // CASCADE supprime automatiquement les recipients
+
+    res.json({ success: true, message: 'Notification supprimée' });
+  } catch (err) {
+    console.error('Erreur admin delete:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

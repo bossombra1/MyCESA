@@ -19,10 +19,13 @@ class CheckJwtToken
         }
 
         try {
-            $apiUrl = env('NODE_API_URL', 'http://localhost:8080/api');
+            $apiUrl = env('NODE_API_URL');
+            if (!$apiUrl) {
+                return redirect()->route('login')->with('error', 'NODE_API_URL est manquant.');
+            }
             $response = Http::withToken($token)
                 ->timeout(5)
-                ->get($apiUrl . '/auth/verify');
+                ->get($apiUrl . '/auth/me');
 
             if ($response->status() === 401) {
                 Session::flush();

@@ -11,14 +11,18 @@ import { useTheme } from '../context/ThemeContext';
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
 
-export default function PaiementsScreen() {
+export default function PaiementsScreen({ navigation }) {
   const [data, setData] = useState({ paiements: [], totalPaye: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
-  useEffect(() => { loadPaiements(); }, []);
+  useEffect(() => {
+    loadPaiements();
+    const unsubscribe = navigation.addListener('focus', loadPaiements);
+    return unsubscribe;
+  }, [navigation]);
 
   const loadPaiements = async () => {
     try {
@@ -38,9 +42,11 @@ export default function PaiementsScreen() {
 
   const paiements = data.paiements || [];
   const totalPaye = data.totalPaye || 0;
-  const totalDu = data.totalDu || 0;
-  const reste = totalDu - totalPaye;
-  const progression = totalDu > 0 ? Math.min((totalPaye / totalDu) * 100, 100) : 100;
+  const totalDu = Number(data.totalDu || 0);
+  const reste = Number(data.reste ?? Math.max(0, totalDu - totalPaye));
+  const progression = Number(data.progression ?? (
+    totalDu > 0 ? Math.min((totalPaye / totalDu) * 100, 100) : 0
+  ));
 
   const getStatutColor = (statut) => {
     const s = (statut || '').toLowerCase();

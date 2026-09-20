@@ -16,6 +16,7 @@ import NotesScreen         from '../screens/NotesScreen';
 import AbsencesScreen      from '../screens/AbsencesScreen';
 import PaiementsScreen     from '../screens/PaiementsScreen';
 import EmploiTempsScreen   from '../screens/EmploiTempsScreen';
+import EmploisRecusScreen  from '../screens/EmploisRecusScreen';
 import ChatBotScreen       from '../screens/ChatBotScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import RecompensesScreen   from '../screens/RecompensesScreen';
@@ -126,6 +127,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Evenements"    component={EvenementsScreen}    options={{ title: '⏳ Échéances' }} />
         <Stack.Screen name="Carte"         component={CarteEtudiantScreen} options={{ title: 'Ma Carte Scolaire' }} />
         <Stack.Screen name="APropos"       component={AProposScreen}       options={{ title: 'À propos de CESA' }} />
+        <Stack.Screen name="EmploisRecus" component={EmploisRecusScreen} options={{ title: 'Mes emplois reçus' }} />
 
         {/* ── PROF ── */}
         <Stack.Screen name="MainProf"    component={ProfTabs}          options={{ headerShown: false }} />

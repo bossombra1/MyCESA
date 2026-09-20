@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Tableau de bord — MyCESA')
 @section('page-title', 'Tableau de bord')
