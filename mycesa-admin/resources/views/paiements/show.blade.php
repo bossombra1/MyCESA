@@ -125,7 +125,7 @@
                 $isPaye    = ($p['Statut'] ?? 'Payé') === 'Payé';
                 $coulPaye  = $isPaye ? '#10b981' : '#f59e0b';
                 $montDu    = floatval($p['Montant_Total'] ?? 0);
-                $montPaye  = floatval($p['Montant'] ?? 0);
+                $montPaye  = floatval($p['Montant_Verse'] ?? $p['Montant'] ?? 0);
                 $pctPaye   = $montDu > 0 ? min(100, round(($montPaye / $montDu) * 100)) : 0;
             @endphp
             <div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fafafa;">
@@ -195,7 +195,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Montant payé (FCFA)</label>
-                                    <input type="number" step="500" name="Montant" class="form-control" value="{{ $p['Montant'] ?? 0 }}" required>
+                                    <input type="number" step="500" name="Montant" class="form-control" value="{{ $p['Montant_Verse'] ?? $p['Montant'] ?? 0 }}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Montant total dû</label>

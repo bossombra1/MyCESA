@@ -37,7 +37,7 @@ class PaiementController extends ApiController
                 ];
             }
             $parEtudiant[$idEtu]['versements'][] = $v;
-            $parEtudiant[$idEtu]['total_paye'] += floatval($v['Montant'] ?? 0);
+            $parEtudiant[$idEtu]['total_paye'] += floatval($v['Montant_Verse'] ?? $v['Montant'] ?? 0);
             $parEtudiant[$idEtu]['montant_total'] = max(
                 $parEtudiant[$idEtu]['montant_total'],
                 floatval($v['Montant_Total'] ?? 0)
