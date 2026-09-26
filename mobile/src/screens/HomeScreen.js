@@ -1,25 +1,56 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Platform, StatusBar, Animated, RefreshControl,
+  Alert, StatusBar, Animated, RefreshControl,
   Image, ActivityIndicator
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import API, { SERVER_URL } from '../api/api';
+import { getClasseEtudiant } from '../utils/emploiTempsFichiers';
 
 const VERT   = '#2E7D32';
 const ORANGE = '#D84315';
-const JOURS  = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+
+// -- Emploi du temps : l'API évolue d'une liste de créneaux vers un fichier
+// (image, PDF, Excel, Word) par classe. On lit ici le nouveau format, avec
+// repli silencieux si le backend renvoie encore l'ancien tableau de créneaux.
+const iconeFichier = (type = '') => {
+  const t = type.toLowerCase();
+  if (t.includes('pdf')) return '📕';
+  if (t.includes('xls') || t.includes('sheet') || t.includes('excel')) return '📊';
+  if (t.includes('doc') || t.includes('word')) return '📄';
+  if (t.includes('png') || t.includes('jpg') || t.includes('jpeg') || t.includes('image')) return '🖼️';
+  return '📁';
+};
+
+const libelleType = (type = '') => {
+  const t = type.toLowerCase();
+  if (t.includes('pdf')) return 'Document PDF';
+  if (t.includes('xls') || t.includes('sheet') || t.includes('excel')) return 'Fichier Excel';
+  if (t.includes('doc') || t.includes('word')) return 'Document Word';
+  if (t.includes('png') || t.includes('jpg') || t.includes('jpeg') || t.includes('image')) return 'Image';
+  return 'Fichier';
+};
+
+const formatDate = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const jj = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${jj}/${mm}/${d.getFullYear()}`;
+};
 
 export default function HomeScreen({ navigation }) {
-  const [user, setUser]           = useState(null);
-  const [stats, setStats]         = useState({ notes: 0, absences: 0, paiements: 0 });
-  const [moyenneGen, setMoyenne]  = useState(null);
-  const [coursJour, setCoursJour] = useState([]);
-  const [refreshing, setRefresh]  = useState(false);
-  const [menuVisible, setMenu]    = useState(false);
+  const [user, setUser]             = useState(null);
+  const [stats, setStats]           = useState({ notes: 0, absences: 0, paiements: 0 });
+  const [moyenneGen, setMoyenne]    = useState(null);
+  const [emploi, setEmploi]         = useState(null); // { url, type, classe, updatedAt } | null
+  const [refreshing, setRefresh]    = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [menuVisible, setMenu]      = useState(false);
   const [prochainEvenement, setProchainEvenement] = useState(null);
   const menuAnim = useRef(new Animated.Value(-280)).current;
   const insets   = useSafeAreaInsets();
@@ -34,11 +65,10 @@ export default function HomeScreen({ navigation }) {
   const loadAll = async () => {
     try {
       const stored = await AsyncStorage.getItem('user');
-      if (!stored) return;
+      if (!stored) { setInitialLoading(false); return; }
       const u = JSON.parse(stored);
       setUser(u);
 
-      // Recharger photo depuis API
       try {
         const res = await API.get(`/etudiants/profil/${u.Id_UTILISATEUR}`);
         if (res.data?.Image_Etudiant) {
@@ -52,22 +82,19 @@ export default function HomeScreen({ navigation }) {
         API.get(`/evaluations/${u.Id_UTILISATEUR}/notes`),
         API.get(`/absences/etudiant/${u.Id_UTILISATEUR}`),
         API.get(`/versements/etudiant/${u.Id_UTILISATEUR}`),
-        API.get(`/emploiTemps/etudiant/${u.Id_UTILISATEUR}`),
+        getEmploiActif(u.Id_UTILISATEUR),
       ]);
 
-      const notes  = notesR.status  === 'fulfilled' ? notesR.value.data  : [];
-      const emploi = emploiR.status === 'fulfilled' ? emploiR.value.data : [];
+      const notes = notesR.status === 'fulfilled' ? notesR.value.data : [];
 
       if (notes.length > 0) {
         const total = notes.reduce((s, n) => s + parseFloat(n.Note_Evaluation || 0), 0);
         setMoyenne((total / notes.length).toFixed(2));
       } else setMoyenne(null);
 
-      const jourNow = JOURS[new Date().getDay()];
-      setCoursJour(emploi.filter(c => c.Jour_Semaine === jourNow)
-        .sort((a, b) => (a.Heure_Debut || '').localeCompare(b.Heure_Debut || '')));
+      const emploiData = emploiR.status === 'fulfilled' ? emploiR.value : null;
+      setEmploi(emploiData?.actif || null);
 
-      // Prochain événement
       try {
         const evRes = await API.get(`/evenements/etudiant/${u.Id_UTILISATEUR}`);
         if (evRes.data.length > 0) setProchainEvenement(evRes.data[0]);
@@ -79,6 +106,16 @@ export default function HomeScreen({ navigation }) {
         paiements: paiR.status === 'fulfilled' ? paiR.value.data?.paiements?.length || 0 : 0,
       });
     } catch (_) {}
+    finally { setInitialLoading(false); }
+  };
+
+  // L'accueil ne montre que la version active. Les versions précédentes
+  // restent accessibles dans l'écran Emploi du temps / bibliothèque.
+  const getEmploiActif = async (userId) => {
+    const classeId = await getClasseEtudiant(userId);
+    if (!classeId) return null;
+    const response = await API.get('/emplois-du-temps', { params: { classe_id: classeId } });
+    return response.data;
   };
 
   const onRefresh = async () => { setRefresh(true); await loadAll(); setRefresh(false); };
@@ -118,18 +155,17 @@ export default function HomeScreen({ navigation }) {
     return { txt: '⚠️ Insuffisant', color: '#991B1B', bg: '#FEE2E2' };
   };
 
-  const mention   = getMention(moyenneGen);
-  const initiale  = user?.Nom_User?.charAt(0)?.toUpperCase() || 'E';
-  const heure     = new Date().getHours();
-  const salut     = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
-  const jourNow   = JOURS[new Date().getDay()];
+  const mention  = getMention(moyenneGen);
+  const initiale = user?.Nom_User?.charAt(0)?.toUpperCase() || 'E';
+  const heure    = new Date().getHours();
+  const salut    = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   const menuItems = [
     { icon: '📝', label: 'Mes Notes',        screen: 'Notes' },
     { icon: '📅', label: 'Mes Absences',     screen: 'Absences' },
     { icon: '💰', label: 'Mes Paiements',    screen: 'Paiements' },
     { icon: '⏳', label: 'Évènements', screen: 'Evenements' },
-     { icon: '💬', label: 'Messagerie',       screen: 'Messagerie' },
+    { icon: '💬', label: 'Messagerie',       screen: 'Messagerie' },
     { icon: '🔔', label: 'Notifications',    screen: 'Notifications' },
     { icon: '🏅', label: 'Classement',       screen: 'Leaderboard' },
     { icon: '🏆', label: 'Mes Récompenses',  screen: 'Recompenses' },
@@ -138,16 +174,24 @@ export default function HomeScreen({ navigation }) {
     { icon: 'ℹ️',  label: 'À propos de CESA', screen: 'APropos' },
   ];
 
+  if (initialLoading) {
+    return (
+      <View style={[styles.loaderWrap, { backgroundColor: theme.bg }]}>
+        <StatusBar barStyle="light-content" backgroundColor={VERT} />
+        <ActivityIndicator size="large" color={VERT} />
+        <Text style={[styles.loaderTxt, { color: theme.textSub }]}>Chargement de votre espace…</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.wrapper, { backgroundColor: theme.bg }]}> 
+    <View style={[styles.wrapper, { backgroundColor: theme.bg }]}>
       <StatusBar barStyle="light-content" backgroundColor={VERT} />
 
-      {/* OVERLAY MENU */}
       {menuVisible && (
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={toggleMenu} />
       )}
 
-      {/* DRAWER GAUCHE */}
       <Animated.View style={[styles.drawer, { backgroundColor: theme.drawer, transform: [{ translateX: menuAnim }] }]}>
         <View style={styles.drawerHead}>
           {user?.Image_Etudiant ? (
@@ -160,21 +204,20 @@ export default function HomeScreen({ navigation }) {
         </View>
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           {menuItems.map((item) => (
-            <TouchableOpacity key={item.screen} style={styles.drawerItem} onPress={() => goTo(item.screen)}>
+            <TouchableOpacity key={item.screen} style={styles.drawerItem} activeOpacity={0.7} onPress={() => goTo(item.screen)}>
               <Text style={styles.drawerItemIcon}>{item.icon}</Text>
               <Text style={[styles.drawerItemLabel, { color: theme.text }]}>{item.label}</Text>
               <Text style={styles.drawerArrow}>›</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-        <TouchableOpacity style={styles.drawerLogout} onPress={logout}>
+        <TouchableOpacity style={styles.drawerLogout} activeOpacity={0.8} onPress={logout}>
           <Text style={styles.drawerLogoutTxt}>🚪 Se déconnecter</Text>
         </TouchableOpacity>
       </Animated.View>
 
-      {/* HEADER */}
       <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: theme.header }]}>
-        <TouchableOpacity onPress={toggleMenu} style={styles.menuBtn}>
+        <TouchableOpacity onPress={toggleMenu} style={styles.menuBtn} activeOpacity={0.7}>
           <View style={styles.hamburger}>
             <View style={styles.hLine} />
             <View style={[styles.hLine, { width: 16 }]} />
@@ -182,28 +225,23 @@ export default function HomeScreen({ navigation }) {
           </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>MyCESA</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.menuBtn}>
+        <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.menuBtn} activeOpacity={0.7}>
           <Text style={{ fontSize: 22 }}>🔔</Text>
         </TouchableOpacity>
       </View>
 
-      {/* CONTENU */}
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[VERT]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[VERT]} tintColor={VERT} />}
         contentContainerStyle={{ paddingBottom: insets.bottom + 90 }}
       >
-        {/* HERO SALUTATION */}
-        <View style={[styles.hero, { backgroundColor: theme.hero }]}> 
+        <View style={[styles.hero, { backgroundColor: theme.hero }]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroSalut}>{salut} 👋</Text>
             <Text style={styles.heroNom}>{user?.Nom_User || 'Étudiant'}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.heroAvatar}
-            onPress={() => navigation.navigate('Profil')}
-          >
+          <TouchableOpacity style={styles.heroAvatar} activeOpacity={0.85} onPress={() => navigation.navigate('Profil')}>
             {user?.Image_Etudiant ? (
               <Image source={{ uri: `${SERVER_URL}${user.Image_Etudiant}` }} style={styles.heroAvatarImg} />
             ) : (
@@ -212,13 +250,18 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* CARTE MOYENNE */}
-        <View style={[styles.moyenneCard, { backgroundColor: theme.card }]}> 
+        <View style={[styles.moyenneCard, { backgroundColor: theme.card }]}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.moyenneLabel, { color: theme.textSub }]}>Moyenne Générale</Text>
-            <Text style={[styles.moyenneVal, { color: theme.text }]}> 
+            <Text style={[styles.moyenneVal, { color: theme.text }]}>
               {moyenneGen || '--'}<Text style={styles.moyenneSur}>/20</Text>
             </Text>
+            <View style={styles.moyenneBarTrack}>
+              <View style={[styles.moyenneBarFill, {
+                width: `${Math.min(100, Math.max(0, (parseFloat(moyenneGen) || 0) * 5))}%`,
+                backgroundColor: mention ? mention.color : VERT,
+              }]} />
+            </View>
           </View>
           {mention && (
             <View style={[styles.mentionBadge, { backgroundColor: mention.bg }]}>
@@ -227,10 +270,10 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        {/* PROCHAIN EXAMEN */}
         {prochainEvenement && (
           <TouchableOpacity
             style={[styles.section, { backgroundColor: theme.section, marginBottom: 0 }]}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('Evenements')}
           >
             <View style={styles.sectionHead}>
@@ -249,50 +292,55 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        {/* COURS DU JOUR */}
-        <View style={[styles.section, { backgroundColor: theme.section }]}> 
+        {/* EMPLOI DU TEMPS — référence rapide vers le fichier (image, PDF, Excel, Word…) */}
+        <View style={[styles.section, { backgroundColor: theme.section }]}>
           <View style={styles.sectionHead}>
-            <Text style={[styles.sectionTitre, { color: theme.text }]}>📅 Cours du jour — {jourNow}</Text>
+            <Text style={[styles.sectionTitre, { color: theme.text }]}>🗓️ Emploi du temps</Text>
             <TouchableOpacity onPress={() => navigation.navigate('EmploiTemps')}>
               <Text style={styles.voirTout}>Voir tout ›</Text>
             </TouchableOpacity>
           </View>
-          {coursJour.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyTxt}>Aucun cours prévu aujourd'hui 🎉</Text>
-            </View>
-          ) : (
-            coursJour.map((cours, i) => (
-            <View key={i} style={[styles.coursCard, { backgroundColor: theme.bg, borderLeftColor: '#2E7D32' }]}> 
-                <View style={styles.coursHeureBadge}>
-                  <Text style={styles.coursHeureDebut}>{cours.Heure_Debut || '--:--'}</Text>
-                  <Text style={styles.coursHeureSep}>|</Text>
-                  <Text style={styles.coursHeureFin}>{cours.Heure_Fin || '--:--'}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.coursMatiere, { color: theme.text }]}>{cours.Lib_Matiere || cours.Lib_Cours || 'Cours'}</Text>
-                  <Text style={[styles.coursSalle, { color: theme.textSub }]}>📍 {cours.Salle || 'Salle non définie'}</Text>
-                </View>
+
+          {emploi ? (
+            <TouchableOpacity
+              style={styles.emploiCard} activeOpacity={0.85}
+              onPress={() => navigation.navigate('EmploiTemps')}
+            >
+              <View style={styles.emploiIconWrap}>
+                <Text style={styles.emploiIcon}>{iconeFichier(emploi.type_mime)}</Text>
               </View>
-            ))
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.emploiTitre, { color: theme.text }]} numberOfLines={1}>
+                  {emploi.nom_classe ? `Classe ${emploi.nom_classe}` : 'Mon emploi du temps'}
+                </Text>
+                <Text style={[styles.emploiSousTitre, { color: theme.textSub }]} numberOfLines={1}>
+                  {libelleType(emploi.type_mime)}{emploi.created_at ? ` · Màj le ${formatDate(emploi.created_at)}` : ''}
+                </Text>
+              </View>
+              <Text style={styles.emploiFleche}>›</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTxt}>Aucun fichier actif publié pour votre classe</Text>
+              <Text style={styles.emptyHint}>Les anciennes versions sont consultables dans la bibliothèque.</Text>
+            </View>
           )}
         </View>
 
-        {/* STATISTIQUES */}
-        <View style={[styles.section, { backgroundColor: theme.section }]}> 
+        <View style={[styles.section, { backgroundColor: theme.section }]}>
           <Text style={[styles.sectionTitre, { color: theme.text }]}>📊 Mes Statistiques</Text>
           <View style={styles.statsRow}>
-            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#2563EB', backgroundColor: theme.card }]} onPress={() => navigation.navigate('Notes')}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#2563EB', backgroundColor: theme.card }]} activeOpacity={0.85} onPress={() => navigation.navigate('Notes')}>
               <Text style={styles.statIcon}>📝</Text>
               <Text style={[styles.statVal, { color: theme.text }]}>{stats.notes}</Text>
               <Text style={[styles.statLbl, { color: theme.textSub }]}>Évaluations</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.statCard, { borderTopColor: ORANGE, backgroundColor: theme.card }]} onPress={() => navigation.navigate('Absences')}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: ORANGE, backgroundColor: theme.card }]} activeOpacity={0.85} onPress={() => navigation.navigate('Absences')}>
               <Text style={styles.statIcon}>📅</Text>
               <Text style={[styles.statVal, { color: theme.text }]}>{stats.absences}</Text>
               <Text style={[styles.statLbl, { color: theme.textSub }]}>Absences</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#10B981', backgroundColor: theme.card }]} onPress={() => navigation.navigate('Paiements')}>
+            <TouchableOpacity style={[styles.statCard, { borderTopColor: '#10B981', backgroundColor: theme.card }]} activeOpacity={0.85} onPress={() => navigation.navigate('Paiements')}>
               <Text style={styles.statIcon}>💰</Text>
               <Text style={[styles.statVal, { color: theme.text }]}>{stats.paiements}</Text>
               <Text style={[styles.statLbl, { color: theme.textSub }]}>Paiements</Text>
@@ -300,24 +348,20 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ÉCOLE */}
         <View style={styles.ecoleCard}>
           <Text style={styles.ecoleTitre}>🎓 GROUPE COFE-CESA</Text>
           <Text style={styles.ecoleSlogan}>Une excellence à votre service !</Text>
         </View>
-
       </ScrollView>
 
-      {/* FAB ASSISTANT */}
       <TouchableOpacity
         style={[styles.fab, { bottom: insets.bottom + 10 }]}
         onPress={() => navigation.navigate('ChatBot')}
-        activeOpacity={0.20}
+        activeOpacity={0.85}
       >
         <Text style={styles.fabIcon}>🤖</Text>
         <Text style={styles.fabTxt}>Assistant</Text>
       </TouchableOpacity>
-
     </View>
   );
 }
@@ -325,7 +369,9 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: '#F5F7F5' },
 
-  // OVERLAY + DRAWER
+  loaderWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loaderTxt: { fontSize: 13, fontWeight: '600' },
+
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 },
   drawer: {
     position: 'absolute', top: 0, left: 0, bottom: 0, width: 280,
@@ -353,19 +399,18 @@ const styles = StyleSheet.create({
   drawerLogout: { padding: 20, borderTopWidth: 1, borderTopColor: '#F1F5F9', backgroundColor: '#FFF1F2' },
   drawerLogoutTxt: { color: '#EF4444', fontSize: 15, fontWeight: '700', textAlign: 'center' },
 
-fab: {
+  fab: {
     position: 'absolute', right: 20,
     backgroundColor: ORANGE, borderRadius: 32,
     paddingHorizontal: 18, paddingVertical: 14,
     flexDirection: 'row', alignItems: 'center',
     elevation: 10,
     shadowColor: ORANGE, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4, shadowRadius: 12,
+    shadowOpacity: 0.35, shadowRadius: 12,
   },
   fabIcon: { fontSize: 20 },
   fabTxt: { color: '#fff', fontSize: 14, fontWeight: '800', marginLeft: 8 },
 
-  // HEADER
   header: {
     backgroundColor: VERT,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -376,7 +421,6 @@ fab: {
   hLine: { width: 22, height: 2.5, backgroundColor: '#fff', borderRadius: 2 },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: 1 },
 
-  // HERO
   hero: {
     backgroundColor: VERT,
     flexDirection: 'row', alignItems: 'center',
@@ -393,7 +437,6 @@ fab: {
   heroAvatarTxt: { color: '#fff', fontSize: 20, fontWeight: '900' },
   heroAvatarImg: { width: 50, height: 50, borderRadius: 25 },
 
-  // MOYENNE
   moyenneCard: {
     backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16,
     borderRadius: 20, padding: 20,
@@ -404,10 +447,11 @@ fab: {
   moyenneLabel: { fontSize: 13, color: '#64748B', fontWeight: '600' },
   moyenneVal: { fontSize: 40, fontWeight: '900', color: '#1E293B', marginTop: 2 },
   moyenneSur: { fontSize: 18, color: '#94A3B8', fontWeight: '600' },
+  moyenneBarTrack: { height: 6, borderRadius: 3, backgroundColor: '#E2E8F0', marginTop: 10, width: '90%', overflow: 'hidden' },
+  moyenneBarFill: { height: '100%', borderRadius: 3 },
   mentionBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
   mentionTxt: { fontSize: 13, fontWeight: '800' },
 
-  // SECTION
   section: {
     backgroundColor: '#fff', marginHorizontal: 16, marginTop: 14,
     borderRadius: 20, padding: 18,
@@ -418,27 +462,28 @@ fab: {
   sectionTitre: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
   voirTout: { color: VERT, fontSize: 13, fontWeight: '700' },
 
-  // COURS
   emptyBox: { backgroundColor: '#F0FDF4', borderRadius: 12, padding: 14 },
   emptyTxt: { color: VERT, fontWeight: '600', textAlign: 'center' },
-  coursCard: {
+  emptyHint: { color: '#64748B', fontSize: 12, lineHeight: 18, marginTop: 5, textAlign: 'center' },
+
+  emploiCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#F8FAFC', borderRadius: 14, padding: 12, marginBottom: 8,
-    borderLeftWidth: 4, borderLeftColor: VERT,
+    backgroundColor: '#F8FAFC', borderRadius: 16, padding: 14,
   },
-  coursHeureBadge: { alignItems: 'center', minWidth: 52 },
-  coursHeureDebut: { fontSize: 13, fontWeight: '800', color: VERT },
-  coursHeureSep: { color: '#CBD5E1', fontSize: 10 },
-  coursHeureFin: { fontSize: 11, color: '#64748B' },
-  coursMatiere: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  coursSalle: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  emploiIconWrap: {
+    width: 46, height: 46, borderRadius: 14, backgroundColor: '#DCFCE7',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  emploiIcon: { fontSize: 22 },
+  emploiTitre: { fontSize: 14, fontWeight: '800', color: '#1E293B' },
+  emploiSousTitre: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  emploiFleche: { fontSize: 22, color: '#CBD5E1', fontWeight: '700' },
 
   examCard:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEE2E2', borderRadius: 12, padding: 12, gap: 10 },
   examIcon:  { fontSize: 28 },
   examTitre: { fontSize: 14, fontWeight: '800' },
   examDate:  { fontSize: 12, marginTop: 2, fontWeight: '600' },
 
-  // STATS
   statsRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   statCard: {
     flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, padding: 14,
@@ -449,7 +494,6 @@ fab: {
   statVal: { fontSize: 26, fontWeight: '900', color: '#1E293B' },
   statLbl: { fontSize: 11, color: '#64748B', fontWeight: '600', marginTop: 2, textAlign: 'center' },
 
-  // ÉCOLE
   ecoleCard: {
     backgroundColor: VERT, marginHorizontal: 16, marginTop: 14, marginBottom: 8,
     borderRadius: 20, padding: 18, alignItems: 'center',

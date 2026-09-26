@@ -38,17 +38,101 @@ router.get('/etudiant/:id', auth, async (req, res) => {
 });
 
 // GET tous les versements (admin)
+//
+// Chaque ligne retournee est un VERSEMENT (une ligne de la table VERSER liee a
+// son VERSEMENT). Attention : VERSEMENT.Montant_Total est le MONTANT TOTAL DU
+// (ex. 500 000 FCFA pour la scolarite) et non le montant de la ligne. Le
+// montant reellement verse est VERSER.Montant. On expose donc les deux
+// colonnes brutes sous des noms sans ambiguite.
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT v.*, e.Nom_Etudiant, e.Prenoms_Etudiant, e.Matricule_Etudiant,
-              vs.Lib_Versement, vs.Montant_Total, vs.Date_Versement
+      `SELECT v.Id_ETUDIANT,
+              v.Id_VERSEMENT,
+              v.Montant        AS Montant_Verse,
+              v.Date_Paiement,
+              v.Statut,
+              e.Nom_Etudiant, e.Prenoms_Etudiant, e.Matricule_Etudiant,
+              e.Id_CLASSE,
+              c.Nom_Classe,
+              f.Id_FILIERE,
+              f.Nom_Filiere,
+              vs.Lib_Versement,
+              vs.Montant_Total,
+              vs.Date_Versement
        FROM VERSER v
        JOIN ETUDIANT e ON v.Id_ETUDIANT = e.Id_ETUDIANT
+       LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
+       LEFT JOIN FILIERE f ON e.Id_FILIERE = f.Id_FILIERE
        JOIN VERSEMENT vs ON v.Id_VERSEMENT = vs.Id_VERSEMENT
-       ORDER BY vs.Date_Versement DESC`
+       ORDER BY e.Nom_Etudiant, vs.Date_Versement DESC`
     );
     res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET totaux de paiement agreges par etudiant (admin)
+//
+// Une seule ligne par etudiant, montants calcules directement en base :
+//   totalDu   = plus grand Montant_Total parmi ses versements (le du est
+//               global a la scolarite, il ne se cumule pas)
+//   totalPaye = SUM(VERSER.Montant) sur tous ses versements
+//   reste     = totalDu - totalPaye (borne a 0)
+//   statut    = 'Soldé' | 'Partiel' | 'Impayé'
+router.get('/totaux', auth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT e.Id_ETUDIANT,
+              e.Matricule_Etudiant,
+              e.Nom_Etudiant,
+              e.Prenoms_Etudiant,
+              e.Id_CLASSE,
+              c.Nom_Classe,
+              e.Id_FILIERE,
+              f.Nom_Filiere,
+              COALESCE(MAX(vs.Montant_Total), 0) AS totalDu,
+              COALESCE(SUM(v.Montant), 0)        AS totalPaye,
+              COUNT(v.Id_VERSEMENT)              AS nombreVersements,
+              MAX(v.Date_Paiement)               AS dernierPaiement
+       FROM ETUDIANT e
+       LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
+       LEFT JOIN FILIERE f ON e.Id_FILIERE = f.Id_FILIERE
+       LEFT JOIN VERSER v ON v.Id_ETUDIANT = e.Id_ETUDIANT
+       LEFT JOIN VERSEMENT vs ON vs.Id_VERSEMENT = v.Id_VERSEMENT
+       GROUP BY e.Id_ETUDIANT, e.Matricule_Etudiant, e.Nom_Etudiant,
+                e.Prenoms_Etudiant, e.Id_CLASSE, c.Nom_Classe,
+                e.Id_FILIERE, f.Nom_Filiere
+       ORDER BY e.Nom_Etudiant, e.Prenoms_Etudiant`
+    );
+
+    const totaux = rows.map((r) => {
+      const totalDu = Number(r.totalDu) || 0;
+      const totalPaye = Number(r.totalPaye) || 0;
+      const reste = Math.max(0, totalDu - totalPaye);
+      const progression = totalDu > 0 ? Math.min(100, Math.round((totalPaye / totalDu) * 100)) : 0;
+      const statut = totalDu > 0 && reste <= 0 ? 'Soldé' : totalPaye > 0 ? 'Partiel' : 'Impayé';
+      return { ...r, totalDu, totalPaye, reste, progression, statut };
+    });
+
+    const totalDuGlobal = totaux.reduce((s, t) => s + t.totalDu, 0);
+    const totalPercuGlobal = totaux.reduce((s, t) => s + t.totalPaye, 0);
+    const resteGlobal = Math.max(0, totalDuGlobal - totalPercuGlobal);
+
+    res.json({
+      totaux,
+      stats: {
+        totalDu: totalDuGlobal,
+        totalPercu: totalPercuGlobal,
+        reste: resteGlobal,
+        tauxRecouvrement: totalDuGlobal > 0
+          ? Math.round((totalPercuGlobal / totalDuGlobal) * 1000) / 10
+          : 0,
+        etudiants: totaux.length,
+        soldes: totaux.filter((t) => t.statut === 'Soldé').length,
+        partiels: totaux.filter((t) => t.statut === 'Partiel').length,
+        impayes: totaux.filter((t) => t.statut === 'Impayé').length,
+      },
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -1,0 +1,318 @@
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { X, AlertCircle, Loader2, Send, Users, School, GraduationCap, CalendarClock } from 'lucide-react';
+import { notificationsService } from '../../services';
+
+/**
+ * Champs retournes par ce formulaire = colonnes reelles de `notification_contents`
+ * (voir backend/routes/notifications.js -> POST /notifications/send-cible) :
+ *   Titre_Notif (varchar 255, NOT NULL)
+ *   Message_Notif (text, NOT NULL)
+ *   Type (enum 'academique' | 'vie_scolaire' | 'finance' | 'autre')
+ *   Cible (enum 'tous' | 'filiere' | 'classe' | 'etudiant')
+ *   Id_Filiere / Id_Classe / Id_Etudiant (selon la cible)
+ *   Scheduled_At (datetime, NULL = envoi immediat)
+ */
+export type NotificationFormValues = {
+  titre: string;
+  message: string;
+  type: string;
+  cible: string;
+  idFiliere: string;
+  idClasse: string;
+  idEtudiant: string;
+  dateProgrammee: string;
+};
+
+type Props = {
+  submitting?: boolean;
+  error?: string;
+  onClose: () => void;
+  onSubmit: (values: NotificationFormValues) => void | Promise<void>;
+};
+
+// Valeurs exactes de l'ENUM Type en base.
+const TYPES = [
+  { value: 'academique', label: 'AcadÃ©mique' },
+  { value: 'vie_scolaire', label: 'Vie scolaire' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'autre', label: 'Autre' },
+];
+
+// Valeurs exactes de l'ENUM Cible en base.
+const CIBLES = [
+  { value: 'tous', label: 'Tous les Ã©tudiants', icone: Users },
+  { value: 'filiere', label: 'Une filiÃ¨re', icone: School },
+  { value: 'classe', label: 'Une classe', icone: School },
+  { value: 'etudiant', label: 'Un Ã©tudiant', icone: GraduationCap },
+];
+
+// Colonne limitee en base : Titre_Notif varchar(255)
+const TITRE_MAX = 255;
+
+const maintenantLocal = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+export default function NotificationFormModal({ submitting = false, error = '', onClose, onSubmit }: Props) {
+  const [titre, setTitre] = useState('');
+  const [message, setMessage] = useState('');
+  const [type, setType] = useState('academique');
+  const [cible, setCible] = useState('tous');
+  const [idFiliere, setIdFiliere] = useState('');
+  const [idClasse, setIdClasse] = useState('');
+  const [idEtudiant, setIdEtudiant] = useState('');
+  const [programmer, setProgrammer] = useState(false);
+  const [dateProgrammee, setDateProgrammee] = useState(maintenantLocal);
+  const [rechercheEtudiant, setRechercheEtudiant] = useState('');
+  const [cibles, setCibles] = useState<{ filieres: any[]; classes: any[]; etudiants: any[] }>({ filieres: [], classes: [], etudiants: [] });
+  const [chargementCibles, setChargementCibles] = useState(true);
+  const [erreurs, setErreurs] = useState<{ titre?: string; message?: string; cible?: string; date?: string }>({});
+
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !submitting) closeRef.current(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [submitting]);
+
+  // Listes dÃ©roulantes alimentÃ©es par les tables rÃ©elles FILIERE / CLASSE / ETUDIANT.
+  useEffect(() => {
+    let actif = true;
+    (async () => {
+      try {
+        const { data } = await notificationsService.getCibles();
+        if (actif) setCibles(data);
+      } catch {
+        if (actif) setCibles({ filieres: [], classes: [], etudiants: [] });
+      } finally {
+        if (actif) setChargementCibles(false);
+      }
+    })();
+    return () => { actif = false; };
+  }, []);
+
+  // Une classe appartient Ã  une filiÃ¨re : on filtre la liste quand une filiÃ¨re est choisie.
+  const classesAffichees = useMemo(
+    () => (idFiliere ? cibles.classes.filter((c) => String(c.filiereId) === idFiliere) : cibles.classes),
+    [cibles.classes, idFiliere],
+  );
+  const etudiantsAffiches = useMemo(() => {
+    const q = rechercheEtudiant.trim().toLowerCase();
+    return cibles.etudiants.filter((e) => {
+      if (idClasse && String(e.classeId) !== idClasse) return false;
+      if (!q) return true;
+      return [e.nom, e.prenoms, e.matricule].some((v) => String(v || '').toLowerCase().includes(q));
+    });
+  }, [cibles.etudiants, idClasse, rechercheEtudiant]);
+
+  const changerCible = (value: string) => {
+    setCible(value);
+    setIdFiliere('');
+    setIdClasse('');
+    setIdEtudiant('');
+    setRechercheEtudiant('');
+  };
+
+  const valider = () => {
+    const next: typeof erreurs = {};
+    if (!titre.trim()) next.titre = 'Le titre est obligatoire.';
+    else if (titre.trim().length > TITRE_MAX) next.titre = `Le titre ne doit pas dÃ©passer ${TITRE_MAX} caractÃ¨res.`;
+    if (!message.trim()) next.message = 'Le message est obligatoire.';
+    if (cible === 'filiere' && !idFiliere) next.cible = 'SÃ©lectionnez une filiÃ¨re.';
+    if (cible === 'classe' && !idClasse) next.cible = 'SÃ©lectionnez une classe.';
+    if (cible === 'etudiant' && !idEtudiant) next.cible = 'SÃ©lectionnez un Ã©tudiant.';
+    if (programmer && !dateProgrammee) next.date = 'Choisissez une date de programmation.';
+    return next;
+  };
+
+  const handleSubmit = async () => {
+    const next = valider();
+    setErreurs(next);
+    if (Object.keys(next).length) return;
+    await onSubmit({
+      titre: titre.trim(),
+      message: message.trim(),
+      type,
+      cible,
+      idFiliere,
+      idClasse,
+      idEtudiant,
+      // Scheduled_At reste NULL si l'envoi est immÃ©diat (le backend pose alors Sent_At = NOW()).
+      dateProgrammee: programmer && dateProgrammee ? `${dateProgrammee.replace('T', ' ')}:00` : '',
+    });
+  };
+
+  const champClass = (champ: keyof typeof erreurs) =>
+    `w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-colors focus:ring-2 ${
+      erreurs[champ] ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'
+    }`;
+
+  const champNeutre = 'w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 sm:items-center"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && !submitting && onClose()}>
+      <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="notif-modal-title">
+        <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+              <Send className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 id="notif-modal-title" className="text-lg font-semibold text-gray-900">Nouvelle notification</h2>
+              <p className="text-xs text-gray-500">EnregistrÃ©e dans notification_contents puis envoyÃ©e aux destinataires</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} disabled={submitting} aria-label="Fermer"
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 disabled:opacity-50">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-5 px-5 py-5 sm:px-6">
+          {error && <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span>{error}</span>
+          </div>}
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Titre <span className="text-red-500">*</span></label>
+            <input type="text" maxLength={TITRE_MAX} value={titre} placeholder="Ex. Rappel : paiement des frais de scolaritÃ©"
+              onChange={(e) => setTitre(e.target.value)} className={champClass('titre')} />
+            <div className="flex items-center justify-between">
+              {erreurs.titre && <p className="flex items-center gap-1.5 text-xs font-medium text-red-600"><AlertCircle className="h-3.5 w-3.5" />{erreurs.titre}</p>}
+              <span className="ml-auto text-xs text-gray-400">{titre.length}/{TITRE_MAX}</span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Message <span className="text-red-500">*</span></label>
+            <textarea rows={4} value={message} placeholder="DÃ©crivez le contenu de la notificationâ€¦"
+              onChange={(e) => setMessage(e.target.value)}
+              className={`${champClass('message')} resize-y`} />
+            {erreurs.message && <p className="flex items-center gap-1.5 text-xs font-medium text-red-600"><AlertCircle className="h-3.5 w-3.5" />{erreurs.message}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Type <span className="text-red-500">*</span></label>
+            <select value={type} onChange={(e) => setType(e.target.value)} className={champNeutre}>
+              {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <p className="text-sm font-semibold text-gray-800">Destinataires</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {CIBLES.map(({ value, label, icone: Icone }) => (
+                <button key={value} type="button" onClick={() => changerCible(value)}
+                  className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors ${
+                    cible === value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  }`}>
+                  <Icone className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {chargementCibles && <p className="text-xs text-gray-500">Chargement des listesâ€¦</p>}
+
+            {!chargementCibles && cible === 'filiere' && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">FiliÃ¨re <span className="text-red-500">*</span></label>
+                <select value={idFiliere} onChange={(e) => setIdFiliere(e.target.value)} className={champNeutre}>
+                  <option value="">SÃ©lectionner une filiÃ¨re</option>
+                  {cibles.filieres.map((f) => <option key={f.id} value={String(f.id)}>{f.nom}</option>)}
+                </select>
+              </div>
+            )}
+
+            {!chargementCibles && cible === 'classe' && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">FiliÃ¨re (filtre)</label>
+                  <select value={idFiliere} onChange={(e) => { setIdFiliere(e.target.value); setIdClasse(''); }} className={champNeutre}>
+                    <option value="">Toutes les filiÃ¨res</option>
+                    {cibles.filieres.map((f) => <option key={f.id} value={String(f.id)}>{f.nom}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">Classe <span className="text-red-500">*</span></label>
+                  <select value={idClasse} onChange={(e) => setIdClasse(e.target.value)} className={champNeutre}>
+                    <option value="">SÃ©lectionner une classe</option>
+                    {classesAffichees.map((c) => <option key={c.id} value={String(c.id)}>{c.nom}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {!chargementCibles && cible === 'etudiant' && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">Classe (filtre)</label>
+                  <select value={idClasse} onChange={(e) => { setIdClasse(e.target.value); setIdEtudiant(''); }} className={champNeutre}>
+                    <option value="">Toutes les classes</option>
+                    {cibles.classes.map((c) => <option key={c.id} value={String(c.id)}>{c.nom}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">Rechercher</label>
+                  <input type="text" value={rechercheEtudiant} placeholder="Nom ou matriculeâ€¦"
+                    onChange={(e) => setRechercheEtudiant(e.target.value)} className={champNeutre} />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">Ã‰tudiant <span className="text-red-500">*</span></label>
+                  <select value={idEtudiant} onChange={(e) => setIdEtudiant(e.target.value)} className={champNeutre}>
+                    <option value="">SÃ©lectionner un Ã©tudiant</option>
+                    {etudiantsAffiches.map((e) => (
+                      <option key={e.id} value={String(e.id)}>
+                        {`${e.nom} ${e.prenoms}`.trim()}{e.matricule ? ` â€” ${e.matricule}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {!etudiantsAffiches.length && <p className="text-xs text-gray-500">Aucun Ã©tudiant ne correspond Ã  ce filtre.</p>}
+                </div>
+              </div>
+            )}
+
+            {erreurs.cible && <p className="flex items-center gap-1.5 text-xs font-medium text-red-600"><AlertCircle className="h-3.5 w-3.5" />{erreurs.cible}</p>}
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-gray-200 p-4">
+            <label className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
+              <input type="checkbox" checked={programmer} onChange={(e) => setProgrammer(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <CalendarClock className="h-4 w-4 text-gray-500" />
+              Programmer lâ€™envoi (dÃ©cochez pour un envoi immÃ©diat)
+            </label>
+            {!programmer && <p className="text-xs text-gray-500">Sans programmation, la notification est marquÃ©e envoyÃ©e aussitÃ´t (Sent_At = maintenant).</p>}
+            {programmer && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Date et heure dâ€™envoi <span className="text-red-500">*</span></label>
+                <input type="datetime-local" value={dateProgrammee} onChange={(e) => setDateProgrammee(e.target.value)} className={champNeutre} />
+                {erreurs.date && <p className="flex items-center gap-1.5 text-xs font-medium text-red-600"><AlertCircle className="h-3.5 w-3.5" />{erreurs.date}</p>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4 sm:px-6">
+          <button type="button" onClick={onClose} disabled={submitting}
+            className="rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50">
+            Annuler
+          </button>
+          <button type="button" onClick={handleSubmit} disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70">
+            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Envoiâ€¦</> : <><Send className="h-4 w-4" />Envoyer</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

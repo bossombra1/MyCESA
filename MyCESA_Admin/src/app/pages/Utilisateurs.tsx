@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Plus, Search, Users, Shield, Lock, Edit, Trash2 } from 'lucide-react';
 import { useApiData } from '../../hooks/useApiData';
-import CrudModal from '../components/CrudModal';
-import { rolesService, utilisateursService } from '../../services';
+import UtilisateurFormModal from '../components/UtilisateurFormModal';
+import { profilsLiablesService, utilisateursService } from '../../services';
 
 export default function Utilisateurs() {
   const { data: utilisateurs, loading, error, reload } = useApiData<any[]>(utilisateursService.getAll, []);
-  const { data: roles } = useApiData<any[]>(rolesService.getAll, []);
+  const { data: profilsLiables } = useApiData<any>(profilsLiablesService.getAll, { professeurs: [], etudiants: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing] = useState<any>(null);
@@ -23,8 +23,7 @@ export default function Utilisateurs() {
   const saveUser = async (values: Record<string, string>) => {
     setSubmitting(true); setSubmitError('');
     try {
-      if (!values.nom.trim() || !values.login.trim()) throw new Error('Le nom et le login sont obligatoires.');
-      const payload = { nom: values.nom.trim(), login: values.login.trim(), email: values.email.trim(), password: values.password, roleId: values.roleId ? Number(values.roleId) : 1 };
+      const payload = { nom: values.nom, login: values.login, email: values.email, password: values.password, roleId: values.roleId ? Number(values.roleId) : 1 };
       if (modal === 'edit') await utilisateursService.update(editing.id, payload); else await utilisateursService.create(payload);
       setModal(null); await reload();
     } catch (requestError: any) { setSubmitError(requestError?.response?.data?.error || requestError?.message || 'Impossible d’enregistrer l’utilisateur.'); }
@@ -142,16 +141,11 @@ export default function Utilisateurs() {
           </tbody>
         </table>
       </div>
-      {modal && <CrudModal
-        title={modal === 'edit' ? 'Modifier l’utilisateur' : 'Nouvel utilisateur'}
-        initialValues={{ nom: editing?.nom || '', login: editing?.login || '', email: editing?.email || '', password: '', roleId: String(editing?.roleId || '') }}
-        fields={[
-          { name: 'nom', label: 'Nom', required: true },
-          { name: 'login', label: 'Login', required: true },
-          { name: 'email', label: 'Email', type: 'email' },
-          ...(modal === 'create' ? [{ name: 'password', label: 'Mot de passe', type: 'text' as const, required: true }] : []),
-          { name: 'roleId', label: 'Rôle', type: 'select', options: roles.map((role) => ({ value: String(role.Id_ROLE || role.id), label: role.Lib_Role || role.nom })) },
-        ]}
+      {modal && <UtilisateurFormModal
+        mode={modal}
+        user={editing}
+        profilsLiables={profilsLiables}
+        utilisateurs={utilisateurs}
         error={submitError}
         submitting={submitting}
         onClose={() => setModal(null)}

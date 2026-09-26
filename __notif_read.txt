@@ -1,30 +1,30 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { Plus, Search, Filter, Bell, Send, Trash2, CheckCircle, Clock, Users, AlertCircle } from 'lucide-react';
 import { useApiData } from '../../hooks/useApiData';
-import { notificationsService } from '../../services';
+import { notificationsService, filieresService, classesService, etudiantsService } from '../../services';
 import NotificationFormModal, { NotificationFormValues } from '../components/NotificationFormModal';
 
 /**
- * Données réelles : GET /notifications/admin/liste renvoie les lignes de
- * `notification_contents` jointes à FILIERE / CLASSE / ETUDIANT / UTILISATEUR
+ * DonnÃ©es rÃ©elles : GET /notifications/admin/liste renvoie les lignes de
+ * `notification_contents` jointes Ã  FILIERE / CLASSE / ETUDIANT / UTILISATEUR
  * (colonnes : Titre_Notif, Message_Notif, Type, Cible, Scheduled_At, Sent_At,
  * Nom_Filiere, Nom_Classe, Nom_Etudiant, Matricule_Etudiant, Auteur_Nom,
  * total_recipients, total_lus).
  */
 
-// Libellés lisibles des ENUM réels de la base.
+// LibellÃ©s lisibles des ENUM rÃ©els de la base.
 const TYPE_LABELS: Record<string, string> = {
-  academique: 'Académique',
+  academique: 'AcadÃ©mique',
   vie_scolaire: 'Vie scolaire',
   finance: 'Finance',
   autre: 'Autre',
 };
 
 const CIBLE_LABELS: Record<string, string> = {
-  tous: 'Tous les étudiants',
-  filiere: 'Filière',
+  tous: 'Tous les Ã©tudiants',
+  filiere: 'FiliÃ¨re',
   classe: 'Classe',
-  etudiant: 'Étudiant',
+  etudiant: 'Ã‰tudiant',
 };
 
 const labelType = (type: string) => TYPE_LABELS[type] || type || 'Autre';
@@ -48,23 +48,27 @@ const getStatutColor = (statut: string) => {
 
 // Date_Notif / Scheduled_At / Sent_At sont des DATETIME MySQL.
 const formatDate = (value: string) => {
-  if (!value) return '—';
+  if (!value) return 'â€”';
   const date = new Date(String(value).replace(' ', 'T'));
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-/**
- * Destinataire réel : le mapper `notifToClient` construit `cibleLibelle`
- * d'après les jointures FILIERE / CLASSE / ETUDIANT du backend.
- */
+/** Destinataire rÃ©el, reconstruit depuis les jointures du backend. */
 const destinatairesTexte = (notif: any) => {
-  if (notif.cible === 'etudiant' && notif.matricule) return `${notif.cibleLibelle} (${notif.matricule})`;
-  return notif.cibleLibelle || 'Tous les étudiants';
+  switch (notif.cible) {
+    case 'filiere': return notif.filiere || 'FiliÃ¨re introuvable';
+    case 'classe': return notif.classe || 'Classe introuvable';
+    case 'etudiant': return notif.etudiant || 'Ã‰tudiant introuvable';
+    default: return 'Tous les Ã©tudiants';
+  }
 };
 
 export default function Notifications() {
   const { data: notifications, loading, error, reload } = useApiData<any[]>(notificationsService.getAll, []);
+  const { data: filieres } = useApiData<any[]>(filieresService.getAll, []);
+  const { data: classes } = useApiData<any[]>(classesService.getAll, []);
+  const { data: etudiants } = useApiData<any[]>(etudiantsService.getAll, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('Tous');
   const [selectedStatut, setSelectedStatut] = useState('Tous');
@@ -72,7 +76,7 @@ export default function Notifications() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Les données viennent de la BD : filtrage effectué sur les vrais champs.
+  // Les donnÃ©es viennent de la BD : filtrage effectuÃ© sur les vrais champs.
   const filteredNotifications = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return notifications.filter((notif) => {
@@ -105,23 +109,23 @@ export default function Notifications() {
       setModal(null);
       await reload();
     } catch (requestError: any) {
-      setSubmitError(requestError?.response?.data?.error || requestError?.message || 'Impossible d’envoyer la notification.');
+      setSubmitError(requestError?.response?.data?.error || requestError?.message || 'Impossible dâ€™envoyer la notification.');
     } finally { setSubmitting(false); }
   };
 
   const removeNotification = async (notif: any) => {
-    if (!window.confirm(`Supprimer la notification « ${notif.titre} » ?`)) return;
+    if (!window.confirm(`Supprimer la notification Â« ${notif.titre} Â» ?`)) return;
     try { await notificationsService.delete(notif.id); await reload(); }
     catch (requestError: any) { setSubmitError(requestError?.response?.data?.error || 'Impossible de supprimer la notification.'); }
   };
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
+      {/* En-tÃªte */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestion des Notifications</h1>
-          <p className="mt-2 text-gray-600">Envoyez et gérez les notifications aux utilisateurs</p>
+          <p className="mt-2 text-gray-600">Envoyez et gÃ©rez les notifications aux utilisateurs</p>
         </div>
         <button type="button" onClick={() => { setSubmitError(''); setModal('create'); }} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
           <Plus className="h-5 w-5" />
@@ -150,7 +154,7 @@ export default function Notifications() {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Envoyées</p>
+              <p className="text-sm font-medium text-gray-600">EnvoyÃ©es</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{totalEnvoyees}</p>
             </div>
             <Send className="h-8 w-8 text-green-500" />
@@ -159,7 +163,7 @@ export default function Notifications() {
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Programmées</p>
+              <p className="text-sm font-medium text-gray-600">ProgrammÃ©es</p>
               <p className="text-2xl font-bold text-yellow-600 mt-1">{totalProgrammees}</p>
             </div>
             <Clock className="h-8 w-8 text-yellow-500" />
@@ -196,9 +200,9 @@ export default function Notifications() {
               onChange={(e) => setSelectedType(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             >
-              {/* ENUM réels de notification_contents.Type */}
+              {/* ENUM rÃ©els de notification_contents.Type */}
               <option value="Tous">Tous les types</option>
-              <option value="academique">Académique</option>
+              <option value="academique">AcadÃ©mique</option>
               <option value="vie_scolaire">Vie scolaire</option>
               <option value="finance">Finance</option>
               <option value="autre">Autre</option>
@@ -208,16 +212,16 @@ export default function Notifications() {
               onChange={(e) => setSelectedStatut(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             >
-              {/* Statut déduit de Sent_At (réel) : envoyée ou programmée */}
+              {/* Statut dÃ©duit de Sent_At (rÃ©el) : envoyÃ©e ou programmÃ©e */}
               <option value="Tous">Tous les statuts</option>
-              <option value="Envoyee">Envoyée</option>
-              <option value="Programmee">Programmée</option>
+              <option value="Envoyee">EnvoyÃ©e</option>
+              <option value="Programmee">ProgrammÃ©e</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Liste des notifications (données réelles de notification_contents) */}
+      {/* Liste des notifications (donnÃ©es rÃ©elles de notification_contents) */}
       <div className="space-y-4">
         {loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 py-12 text-center text-gray-500">
@@ -227,7 +231,7 @@ export default function Notifications() {
         ) : filteredNotifications.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 py-12 text-center text-gray-500">
             <Bell className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Aucune notification trouvée</p>
+            <p>Aucune notification trouvÃ©e</p>
           </div>
         ) : filteredNotifications.map((notif) => (
           <div key={notif.id} className={`bg-white rounded-lg shadow-sm border-l-4 p-6 hover:shadow-md transition-shadow ${getTypeColor(notif.type)}`}>
@@ -239,7 +243,7 @@ export default function Notifications() {
                     {labelType(notif.type)}
                   </span>
                   <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatutColor(notif.statut)}`}>
-                    {notif.statut === 'Envoyee' ? 'Envoyée' : 'Programmée'}
+                    {notif.statut === 'Envoyee' ? 'EnvoyÃ©e' : 'ProgrammÃ©e'}
                   </span>
                   <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
                     {CIBLE_LABELS[notif.cible] || notif.cible}
@@ -261,10 +265,10 @@ export default function Notifications() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    <span>{notif.statut === 'Envoyee' ? `Envoyée le ${formatDate(notif.dateEnvoi)}` : `Programmée le ${formatDate(notif.dateProgrammee)}`}</span>
+                    <span>{notif.statut === 'Envoyee' ? `EnvoyÃ©e le ${formatDate(notif.dateEnvoi)}` : `ProgrammÃ©e le ${formatDate(notif.dateProgrammee)}`}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Créée le {formatDate(notif.dateCreation)}{notif.auteur ? ` par ${notif.auteur}` : ''}</span>
+                    <span className="text-gray-500">CrÃ©Ã©e le {formatDate(notif.dateCreation)}{notif.auteur ? ` par ${notif.auteur}` : ''}</span>
                   </div>
                 </div>
               </div>
@@ -290,3 +294,4 @@ export default function Notifications() {
     </div>
   );
 }
+

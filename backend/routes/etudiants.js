@@ -19,6 +19,25 @@ router.get('/', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET données de référence utilisées par le formulaire Étudiant
+// (listes déroulantes : classes et filières réellement présentes en base).
+router.get('/refs', auth, async (req, res) => {
+  try {
+    const [classes] = await db.query(
+      `SELECT c.Id_CLASSE, c.Nom_Classe, c.Id_FILIERE, f.Nom_Filiere
+       FROM CLASSE c
+       LEFT JOIN FILIERE f ON c.Id_FILIERE = f.Id_FILIERE
+       ORDER BY c.Nom_Classe`
+    );
+    const [filieres] = await db.query(
+      'SELECT Id_FILIERE, Nom_Filiere FROM FILIERE ORDER BY Nom_Filiere'
+    );
+    res.json({ classes, filieres });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET profil étudiant par Id_UTILISATEUR
 router.get('/profil/:id', auth, async (req, res) => {
   try {
@@ -26,7 +45,7 @@ router.get('/profil/:id', auth, async (req, res) => {
       `SELECT e.*, c.Nom_Classe, f.Nom_Filiere, cy.Lib_Cycle
        FROM ETUDIANT e
        LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
-       LEFT JOIN FILIERE f ON c.Id_FILIERE = f.Id_FILIERE
+       LEFT JOIN FILIERE f ON e.Id_FILIERE = f.Id_FILIERE
        LEFT JOIN CYCLE_ cy ON f.Id_CYCLE = cy.Id_CYCLE
        JOIN UTILISATEUR u ON u.Email_User = e.Email_Etudiant
        WHERE u.Id_UTILISATEUR = ?`,

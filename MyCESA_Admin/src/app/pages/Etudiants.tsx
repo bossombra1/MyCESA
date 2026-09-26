@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, Mail, Phone, GraduationCap } from 'lucide-react';
 import { useApiData } from '../../hooks/useApiData';
 import { classesService, etudiantsService, filieresService } from '../../services';
-import CrudModal from '../components/CrudModal';
+import EtudiantFormModal, { type EtudiantFormValues } from '../components/EtudiantFormModal';
 
 export default function Etudiants() {
   const { data: etudiants, loading, error, reload } = useApiData<any[]>(etudiantsService.getAll, []);
@@ -15,6 +15,16 @@ export default function Etudiants() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const nextMatricule = useMemo(() => {
+    const prefix = `ETU${new Date().getFullYear()}`;
+    const last = etudiants.reduce((highest, etudiant) => {
+      const match = String(etudiant.matricule || '').match(new RegExp(`^${prefix}(\\d+)$`, 'i'));
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    return `${prefix}${String(last + 1).padStart(3, '0')}`;
+  }, [etudiants]);
+  const takenMatricules = useMemo(() => etudiants.map((etudiant) => String(etudiant.matricule || '')).filter(Boolean), [etudiants]);
+
   const filieres = Array.from(new Set(etudiants.map((etudiant) => etudiant.filiere).filter(Boolean))).sort();
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredEtudiants = etudiants.filter(etudiant => {
@@ -26,26 +36,16 @@ export default function Etudiants() {
 
   const openCreate = () => { setEditing(null); setSubmitError(''); setModal('create'); };
   const openEdit = (etudiant: any) => { setEditing(etudiant); setSubmitError(''); setModal('edit'); };
-  const saveEtudiant = async (values: Record<string, string>) => {
+  const saveEtudiant = async (values: EtudiantFormValues) => {
     setSubmitting(true); setSubmitError('');
     try {
-      // Validation alignee sur EtudiantController@store (Laravel) :
-      // matricule, nom, prenoms, genre, email et classe/filiere sont requis.
-      if (!values.matricule.trim()) throw new Error('Le matricule est obligatoire.');
-      if (!values.nom.trim()) throw new Error('Le nom est obligatoire.');
-      if (!values.prenoms.trim()) throw new Error('Les prénoms sont obligatoires.');
-      if (!values.genre) throw new Error('Le genre est obligatoire.');
-      if (!values.email.trim()) throw new Error('L’email est obligatoire.');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) throw new Error('L’adresse email n’est pas valide.');
-      if (!values.classeId) throw new Error('La classe est obligatoire.');
-      if (!values.filiereId) throw new Error('La filière est obligatoire.');
       const payload = {
-        matricule: values.matricule.trim(),
+        matricule: values.matricule.trim().toUpperCase(),
         nom: values.nom.trim(),
         prenoms: values.prenoms.trim(),
         genre: values.genre || null,
-        telephone: values.telephone.trim() || null,
-        email: values.email.trim() || null,
+        telephone: values.telephone.replace(/\s/g, '') || null,
+        email: values.email.trim().toLowerCase(),
         dateNaissance: values.dateNaissance || null,
         lieuNaissance: values.lieuNaissance.trim() || null,
         quartier: values.quartier.trim() || null,
@@ -217,35 +217,14 @@ export default function Etudiants() {
           <p className="mt-1 text-sm text-gray-500">Essayez de modifier vos critères de recherche.</p>
         </div>
       )}
-      {modal && <CrudModal
+      {modal && <EtudiantFormModal
         key={modal}
-        title={modal === 'edit' ? 'Modifier l’étudiant' : 'Nouvel étudiant'}
-        initialValues={{
-          matricule: editing?.matricule || '',
-          nom: editing?.nom || '',
-          prenoms: editing?.prenoms || '',
-          genre: editing?.genre || '',
-          telephone: editing?.telephone || '',
-          email: editing?.email || '',
-          dateNaissance: editing?.dateNaissance || '',
-          lieuNaissance: editing?.lieuNaissance || '',
-          quartier: editing?.quartier || '',
-          classeId: String(editing?.classeId || ''),
-          filiereId: String(editing?.filiereId || ''),
-        }}
-        fields={[
-          { name: 'matricule', label: 'Matricule *', required: true, disabled: modal === 'edit', placeholder: 'Ex : ETU2026001' },
-          { name: 'genre', label: 'Genre *', type: 'select', required: true, options: [{ value: 'Masculin', label: 'Masculin' }, { value: 'Feminin', label: 'Féminin' }] },
-          { name: 'nom', label: 'Nom *', required: true },
-          { name: 'prenoms', label: 'Prénoms *', required: true },
-          { name: 'dateNaissance', label: 'Date de naissance', type: 'date' },
-          { name: 'lieuNaissance', label: 'Lieu de naissance', placeholder: 'Ex : Abidjan' },
-          { name: 'quartier', label: 'Quartier', placeholder: 'Ex : Cocody' },
-          { name: 'email', label: 'Email *', type: 'email', required: true, placeholder: 'Ex : etudiant@mycesa.ci' },
-          { name: 'telephone', label: 'Téléphone', placeholder: 'Ex : 0701020304' },
-          { name: 'classeId', label: 'Classe *', type: 'select', required: true, options: classes.map((classe) => ({ value: String(classe.id), label: classe.nom })) },
-          { name: 'filiereId', label: 'Filière *', type: 'select', required: true, options: filieresDisponibles.map((filiere) => ({ value: String(filiere.id), label: filiere.nom })) },
-        ]}
+        mode={modal}
+        etudiant={editing}
+        classes={classes}
+        filieres={filieresDisponibles}
+        nextMatricule={nextMatricule}
+        takenMatricules={takenMatricules}
         error={submitError}
         submitting={submitting}
         onClose={() => setModal(null)}

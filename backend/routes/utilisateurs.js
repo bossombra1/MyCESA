@@ -18,6 +18,33 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET profils liables (PROFESSEUR / ETUDIANT) pour le formulaire de création.
+// Les emails proviennent des tables réelles ; ils servent de lien entre un compte
+// UTILISATEUR et sa fiche métier (voir etudiants.js / professeurs.js).
+router.get('/profils', async (req, res) => {
+  try {
+    const [professeurs] = await db.query(
+      `SELECT Id_PROFESSEUR AS id, Nom_Prenoms_Profe AS nom, email_Profe AS email
+       FROM PROFESSEUR
+       WHERE email_Profe IS NOT NULL AND email_Profe <> ''
+       ORDER BY Nom_Prenoms_Profe`
+    );
+    const [etudiants] = await db.query(
+      `SELECT Id_ETUDIANT AS id,
+              CONCAT_WS(' ', Nom_Etudiant, Prenoms_Etudiant) AS nom,
+              Email_Etudiant AS email,
+              Matricule_Etudiant AS matricule,
+              Id_CLASSE AS idClasse
+       FROM ETUDIANT
+       WHERE Email_Etudiant IS NOT NULL AND Email_Etudiant <> ''
+       ORDER BY Nom_Etudiant, Prenoms_Etudiant`
+    );
+    res.json({ professeurs, etudiants });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST créer utilisateur
 router.post('/', async (req, res) => {
   try {

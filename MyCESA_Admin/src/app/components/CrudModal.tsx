@@ -9,6 +9,8 @@ type Field = {
   required?: boolean;
   disabled?: boolean;
   options?: Array<{ value: string; label: string }>;
+  /** Texte de l'option vide quand aucune valeur n'est selectionnee. */
+  defaultLabel?: string;
 };
 
 type CrudModalProps = {
@@ -63,7 +65,7 @@ export default function CrudModal({
                   onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
                   className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
-                  <option value="">Sélectionner</option>
+                  <option value="">{field.defaultLabel || 'Sélectionner'}</option>
                   {(field.options || []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               ) : (

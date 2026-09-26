@@ -1,0 +1,254 @@
+﻿Ô£à MySQL connect├® avec succ├¿s !
+=== absenter ===
+  Id_ETUDIANT | int | NOT NULL | key=PRI | default=NULL | 
+  Id_UTILISATEUR | int | NOT NULL | key=PRI | default=NULL | 
+  Date_absence | date | NOT NULL | key=PRI | default=NULL | 
+  Nbre_heure | decimal(4,1) | NULL | key= | default=NULL | 
+  Justifiee | tinyint(1) | NULL | key= | default=0 | 
+=== cache ===
+  key | varchar(191) | NOT NULL | key=PRI | default=NULL | 
+  value | mediumtext | NOT NULL | key= | default=NULL | 
+  expiration | int | NOT NULL | key= | default=NULL | 
+=== cache_locks ===
+  key | varchar(191) | NOT NULL | key=PRI | default=NULL | 
+  owner | varchar(255) | NOT NULL | key= | default=NULL | 
+  expiration | int | NOT NULL | key= | default=NULL | 
+=== chat_bot ===
+  Id_Chat | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_ETUDIANT | int | NULL | key=MUL | default=NULL | 
+  Id_UTILISATEUR | int | NULL | key=MUL | default=NULL | 
+  Question | text | NULL | key= | default=NULL | 
+  Reponse | text | NULL | key= | default=NULL | 
+  Date_Chat | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== classe ===
+  Id_CLASSE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_Classe | varchar(50) | NOT NULL | key= | default=NULL | 
+  Effectif_Prevu_Etudiant | int | NULL | key= | default=0 | 
+  Id_FILIERE | int | NULL | key=MUL | default=NULL | 
+=== conversation ===
+  Id_Conversation | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_Etudiant | int | NOT NULL | key=MUL | default=NULL | 
+  Id_Professeur | int | NOT NULL | key=MUL | default=NULL | 
+  Dernier_Message | text | NULL | key= | default=NULL | 
+  Derniere_Date | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+  Non_Lu_Etudiant | int | NULL | key= | default=0 | 
+  Non_Lu_Prof | int | NULL | key= | default=0 | 
+  CreatedAt | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== cycle_ ===
+  Id_CYCLE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Lib_Cycle | varchar(50) | NOT NULL | key= | default=NULL | 
+  Id_SITE | int | NULL | key=MUL | default=NULL | 
+=== emploi_du_temps_fichier ===
+  id | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  classe_id | int | NOT NULL | key=MUL | default=NULL | 
+  nom_fichier_original | varchar(255) | NOT NULL | key= | default=NULL | 
+  type_mime | varchar(120) | NOT NULL | key= | default=NULL | 
+  chemin_stockage | varchar(500) | NOT NULL | key= | default=NULL | 
+  uploaded_by | int | NULL | key=MUL | default=NULL | 
+  created_at | datetime | NOT NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== emploi_temps ===
+  IdEmploi | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_PROFESSEUR | int | NOT NULL | key= | default=NULL | 
+  Id_SALLE | int | NOT NULL | key=MUL | default=NULL | 
+  Id_MATIERE | int | NOT NULL | key=MUL | default=NULL | 
+  Id_CLASSE | int | NOT NULL | key=MUL | default=NULL | 
+  IdEmploi_Temps | varchar(50) | NULL | key= | default=NULL | 
+  date_ | datetime | NULL | key= | default=NULL | 
+  Heure_Debut | time | NULL | key= | default=NULL | 
+  Heure_Fin | time | NULL | key= | default=NULL | 
+  Jour_Semaine | varchar(20) | NULL | key= | default=NULL | 
+  Id_PERIODE | int | NULL | key=MUL | default=NULL | 
+=== emploi_temps_archive ===
+  Id_Archive | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_PROFESSEUR | int | NULL | key= | default=NULL | 
+  Id_SALLE | int | NULL | key= | default=NULL | 
+  Id_MATIERE | int | NULL | key= | default=NULL | 
+  Id_CLASSE | int | NULL | key= | default=NULL | 
+  IdEmploi_Temps | varchar(50) | NULL | key= | default=NULL | 
+  date_ | datetime | NULL | key= | default=NULL | 
+  Heure_Debut | time | NULL | key= | default=NULL | 
+  Heure_Fin | time | NULL | key= | default=NULL | 
+  Jour_Semaine | varchar(20) | NULL | key= | default=NULL | 
+  Action_Archive | varchar(20) | NOT NULL | key= | default=NULL | 
+  Date_Archive | datetime | NOT NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+  Id_UTILISATEUR | int | NULL | key= | default=NULL | 
+=== enseigner ===
+  Id_PROFESSEUR | int | NOT NULL | key=PRI | default=NULL | 
+  Id_MATIERE | int | NOT NULL | key=PRI | default=NULL | 
+=== etudiant ===
+  Id_ETUDIANT | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Matricule_Etudiant | varchar(50) | NOT NULL | key=UNI | default=NULL | 
+  Nom_Etudiant | varchar(50) | NOT NULL | key= | default=NULL | 
+  Prenoms_Etudiant | varchar(100) | NULL | key= | default=NULL | 
+  Genre_Etudiant | varchar(10) | NULL | key= | default=NULL | 
+  Tel_Etudiant | varchar(20) | NULL | key= | default=NULL | 
+  Email_Etudiant | varchar(100) | NULL | key= | default=NULL | 
+  Date_Naissance_Etudiant | date | NULL | key= | default=NULL | 
+  Lieu_Naissance_Etudiant | varchar(100) | NULL | key= | default=NULL | 
+  Quartier_Etudiant | varchar(100) | NULL | key= | default=NULL | 
+  Image_Etudiant | varchar(255) | NULL | key= | default=NULL | 
+  Id_CLASSE | int | NULL | key=MUL | default=NULL | 
+  Id_FILIERE | int | NULL | key=MUL | default=NULL | 
+=== evaluation ===
+  Id_EVALUATION | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Lib_Evaluation | varchar(100) | NULL | key= | default=NULL | 
+  Date_Evaluation | datetime | NULL | key= | default=NULL | 
+  Coef_Evaluation | decimal(4,2) | NULL | key= | default=NULL | 
+  Type_Evaluation | varchar(50) | NULL | key= | default=NULL | 
+  Id_SEMESTRE | int | NULL | key=MUL | default=NULL | 
+=== evaluer ===
+  Id_EVALUATION | int | NOT NULL | key=PRI | default=NULL | 
+  Id_CLASSE | int | NOT NULL | key=PRI | default=NULL | 
+=== evenement_ecole ===
+  Id_Evenement | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Titre | varchar(200) | NOT NULL | key= | default=NULL | 
+  Description | text | NULL | key= | default=NULL | 
+  Date_Evenement | datetime | NOT NULL | key= | default=NULL | 
+  Type | varchar(50) | NULL | key= | default=examen | 
+  Id_Classe | int | NULL | key=MUL | default=NULL | 
+  Id_Filiere | int | NULL | key=MUL | default=NULL | 
+  Pour_Tous | tinyint | NULL | key= | default=0 | 
+  CreatedAt | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== filiere ===
+  Id_FILIERE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_Filiere | varchar(100) | NOT NULL | key= | default=NULL | 
+  Id_CYCLE | int | NULL | key=MUL | default=NULL | 
+=== histo_versement ===
+  Id_HISTO | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_VERSEMENT | int | NULL | key=MUL | default=NULL | 
+  Id_UTILISATEUR | int | NULL | key=MUL | default=NULL | 
+  Date_Histo | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+  Action_Histo | varchar(100) | NULL | key= | default=NULL | 
+=== historique_points ===
+  Id_Historique | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_UTILISATEUR | int | NOT NULL | key=MUL | default=NULL | 
+  Points | int | NOT NULL | key= | default=NULL | 
+  Raison | varchar(200) | NULL | key= | default=NULL | 
+  Type | varchar(50) | NULL | key= | default=NULL | 
+  CreatedAt | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== matiere ===
+  Id_MATIERE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_Matiere | varchar(100) | NOT NULL | key= | default=NULL | 
+=== message ===
+  Id_Message | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_Conversation | int | NOT NULL | key=MUL | default=NULL | 
+  Id_Expediteur | int | NOT NULL | key=MUL | default=NULL | 
+  Contenu | text | NOT NULL | key= | default=NULL | 
+  Lu | tinyint | NULL | key= | default=0 | 
+  CreatedAt | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== migrations ===
+  id | int unsigned | NOT NULL | key=PRI | default=NULL | auto_increment
+  migration | varchar(255) | NOT NULL | key= | default=NULL | 
+  batch | int | NOT NULL | key= | default=NULL | 
+=== notation ===
+  Id_ETUDIANT | int | NOT NULL | key=PRI | default=NULL | 
+  Id_EVALUATION | int | NOT NULL | key=PRI | default=NULL | 
+  Note_Evaluation | decimal(5,2) | NULL | key= | default=NULL | 
+=== notification ===
+  Id_EVENEMENT | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_UTILISATEUR | int | NULL | key=MUL | default=NULL | 
+  Titre_Notif | varchar(100) | NULL | key= | default=NULL | 
+  Message_Notif | text | NULL | key= | default=NULL | 
+  Lu | tinyint(1) | NULL | key= | default=0 | 
+  Date_Notif | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== notification_contents ===
+  id | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Titre_Notif | varchar(255) | NOT NULL | key= | default=NULL | 
+  Message_Notif | text | NOT NULL | key= | default=NULL | 
+  Type | enum('academique','vie_scolaire','finance','autre') | NULL | key= | default=autre | 
+  Cible | enum('tous','filiere','classe','etudiant') | NULL | key= | default=tous | 
+  Id_Filiere | int | NULL | key= | default=NULL | 
+  Id_Classe | int | NULL | key= | default=NULL | 
+  Id_Etudiant | int | NULL | key= | default=NULL | 
+  Scheduled_At | datetime | NULL | key= | default=NULL | 
+  Sent_At | datetime | NULL | key= | default=NULL | 
+  created_by | int | NULL | key= | default=NULL | 
+  Date_Notif | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== notification_recipients ===
+  id | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  id_notification | int | NOT NULL | key=MUL | default=NULL | 
+  Id_UTILISATEUR | int | NOT NULL | key=MUL | default=NULL | 
+  Lu | tinyint(1) | NULL | key=MUL | default=0 | 
+  Date_Lecture | datetime | NULL | key= | default=NULL | 
+  Date_Notif | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== periode_emploi_temps ===
+  Id_PERIODE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_CLASSE | int | NOT NULL | key=MUL | default=NULL | 
+  Type_Periode | varchar(50) | NOT NULL | key= | default=NULL | 
+  Date_Debut | date | NOT NULL | key= | default=NULL | 
+  Date_Fin | date | NOT NULL | key= | default=NULL | 
+  Nom_Periode | varchar(100) | NULL | key= | default=NULL | 
+  Date_Creation | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== points_etudiant ===
+  Id_Points | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_UTILISATEUR | int | NOT NULL | key=MUL | default=NULL | 
+  Total_Points | int | NULL | key= | default=0 | 
+  Niveau | int | NULL | key= | default=1 | 
+  Streak_Connexion | int | NULL | key= | default=0 | 
+  Derniere_Connexion | date | NULL | key= | default=NULL | 
+=== professeur ===
+  Id_PROFESSEUR | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_Prenoms_Profe | varchar(100) | NOT NULL | key= | default=NULL | 
+  Tel_Profe | varchar(20) | NULL | key= | default=NULL | 
+  Quartier_Profe | varchar(100) | NULL | key= | default=NULL | 
+  email_Profe | varchar(100) | NULL | key= | default=NULL | 
+  Date_Naissance | date | NULL | key= | default=NULL | 
+=== push_tokens ===
+  Id_Token | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Id_UTILISATEUR | int | NOT NULL | key=UNI | default=NULL | 
+  Token | varchar(500) | NOT NULL | key= | default=NULL | 
+  Platform | varchar(20) | NULL | key= | default=android | 
+  CreatedAt | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+  UpdatedAt | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+=== role ===
+  Id_ROLE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Lib_Role | varchar(50) | NOT NULL | key= | default=NULL | 
+=== salle ===
+  Id_SALLE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_Salle | varchar(50) | NOT NULL | key= | default=NULL | 
+  Localisation_Salle | varchar(100) | NULL | key= | default=NULL | 
+  Superficie_Salle | varchar(20) | NULL | key= | default=NULL | 
+=== semestre ===
+  Id_SEMESTRE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Lib_Sem | varchar(50) | NOT NULL | key= | default=NULL | 
+  Annee_Academique_Semestre | varchar(20) | NULL | key= | default=NULL | 
+=== sessions ===
+  id | varchar(191) | NOT NULL | key=PRI | default=NULL | 
+  user_id | bigint unsigned | NULL | key=MUL | default=NULL | 
+  ip_address | varchar(45) | NULL | key= | default=NULL | 
+  user_agent | text | NULL | key= | default=NULL | 
+  payload | text | NOT NULL | key= | default=NULL | 
+  last_activity | int | NOT NULL | key=MUL | default=NULL | 
+=== site ===
+  Id_SITE | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_Site | varchar(100) | NOT NULL | key= | default=NULL | 
+  Localisation_Site | varchar(100) | NULL | key= | default=NULL | 
+  Contact_Site | varchar(50) | NULL | key= | default=NULL | 
+=== users ===
+  id | bigint unsigned | NOT NULL | key=PRI | default=NULL | auto_increment
+  name | varchar(255) | NOT NULL | key= | default=NULL | 
+  email | varchar(255) | NOT NULL | key= | default=NULL | 
+  email_verified_at | timestamp | NULL | key= | default=NULL | 
+  password | varchar(255) | NOT NULL | key= | default=NULL | 
+  remember_token | varchar(100) | NULL | key= | default=NULL | 
+  created_at | timestamp | NULL | key= | default=NULL | 
+  updated_at | timestamp | NULL | key= | default=NULL | 
+=== utilisateur ===
+  Id_UTILISATEUR | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Nom_User | varchar(100) | NOT NULL | key= | default=NULL | 
+  Login_User | varchar(50) | NOT NULL | key=UNI | default=NULL | 
+  Email_User | varchar(100) | NULL | key=UNI | default=NULL | 
+  Password_User | varchar(255) | NOT NULL | key= | default=NULL | 
+  Id_ROLE | int | NULL | key=MUL | default=NULL | 
+  Expo_Token | varchar(255) | NULL | key= | default=NULL | 
+=== versement ===
+  Id_VERSEMENT | int | NOT NULL | key=PRI | default=NULL | auto_increment
+  Lib_Versement | varchar(100) | NULL | key= | default=NULL | 
+  Montant_Total | decimal(12,2) | NULL | key= | default=NULL | 
+  Date_Versement | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+=== verser ===
+  Id_ETUDIANT | int | NOT NULL | key=PRI | default=NULL | 
+  Id_VERSEMENT | int | NOT NULL | key=PRI | default=NULL | 
+  Montant | decimal(12,2) | NULL | key= | default=NULL | 
+  Date_Paiement | datetime | NULL | key= | default=CURRENT_TIMESTAMP | DEFAULT_GENERATED
+  Statut | varchar(20) | NULL | key= | default=Pay├® | 

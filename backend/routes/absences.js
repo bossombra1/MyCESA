@@ -9,10 +9,12 @@ router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT a.*, e.Nom_Etudiant, e.Prenoms_Etudiant, e.Matricule_Etudiant,
-              u.Nom_User AS Saisie_Par
+              c.Nom_Classe, u.Nom_User AS Saisie_Par, r.Lib_Role AS Role_Cree_Par
        FROM ABSENTER a
        JOIN ETUDIANT e ON a.Id_ETUDIANT = e.Id_ETUDIANT
+       LEFT JOIN CLASSE c ON e.Id_CLASSE = c.Id_CLASSE
        LEFT JOIN UTILISATEUR u ON a.Id_UTILISATEUR = u.Id_UTILISATEUR
+       LEFT JOIN ROLE r ON u.Id_ROLE = r.Id_ROLE
        ORDER BY a.Date_absence DESC, e.Nom_Etudiant`
     );
     res.json(rows);
@@ -31,9 +33,10 @@ router.get('/etudiant/:id', auth, async (req, res) => {
     if (!etudiant.length) return res.json({ absences: [], totalHeures: 0 });
 
     const [rows] = await db.query(
-      `SELECT a.*, u.Nom_User AS Saisie_Par
+      `SELECT a.*, u.Nom_User AS Saisie_Par, r.Lib_Role AS Role_Cree_Par
        FROM ABSENTER a
        LEFT JOIN UTILISATEUR u ON a.Id_UTILISATEUR = u.Id_UTILISATEUR
+       LEFT JOIN ROLE r ON u.Id_ROLE = r.Id_ROLE
        WHERE a.Id_ETUDIANT = ?
        ORDER BY a.Date_absence DESC`,
       [etudiant[0].Id_ETUDIANT]
@@ -83,11 +86,20 @@ router.post('/', auth, async (req, res) => {
 router.put('/justifier', auth, async (req, res) => {
   try {
     const { Id_ETUDIANT, Date_absence, Id_UTILISATEUR } = req.body;
-    await db.query(
+    // Une absence est identifiée par la clé composite (étudiant, utilisateur,
+    // date). Si l'utilisateur n'est pas fourni (front sans cette info), on
+    // retombe sur l'utilisateur authentifié.
+    if (!Id_ETUDIANT || !Date_absence) {
+      return res.status(400).json({ error: 'Étudiant et date requis' });
+    }
+    const utilisateur = Id_UTILISATEUR || req.user.id;
+    const date = String(Date_absence).slice(0, 10);
+    const [r] = await db.query(
       `UPDATE ABSENTER SET Justifiee = 1
        WHERE Id_ETUDIANT = ? AND Date_absence = ? AND Id_UTILISATEUR = ?`,
-      [Id_ETUDIANT, Date_absence, Id_UTILISATEUR]
+      [Id_ETUDIANT, date, utilisateur]
     );
+    if (!r.affectedRows) return res.status(404).json({ error: 'Aucune absence correspondante trouvée' });
     res.json({ message: 'Absence justifiée' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -96,10 +108,16 @@ router.put('/justifier', auth, async (req, res) => {
 router.delete('/', auth, async (req, res) => {
   try {
     const { Id_ETUDIANT, Date_absence, Id_UTILISATEUR } = req.body;
-    await db.query(
+    if (!Id_ETUDIANT || !Date_absence) {
+      return res.status(400).json({ error: 'Étudiant et date requis' });
+    }
+    const utilisateur = Id_UTILISATEUR || req.user.id;
+    const date = String(Date_absence).slice(0, 10);
+    const [r] = await db.query(
       'DELETE FROM ABSENTER WHERE Id_ETUDIANT=? AND Date_absence=? AND Id_UTILISATEUR=?',
-      [Id_ETUDIANT, Date_absence, Id_UTILISATEUR]
+      [Id_ETUDIANT, date, utilisateur]
     );
+    if (!r.affectedRows) return res.status(404).json({ error: 'Aucune absence correspondante trouvée' });
     res.json({ message: 'Absence supprimée' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

@@ -1,0 +1,23 @@
+﻿ions/admin/${id}`, notifVersApi(payload)),
+  envoyer: (id) => api.post(`/notifications/admin/${id}/envoyer`),
+  delete: (id) => api.delete(`/notifications/admin/${id}`),
+  toClient: notifToClient,
+};
+
+// -- Emplois du temps fichiers : /emplois-du-temps ----------------
+// L'API renvoie des groupes par classe : { classe_id, actif, historique }.
+const serializeFileToClient = (file) => file ? ({
+  ...file,
+  id: file.id,
+  classe_id: file.classe_id,
+  nom_fichier_original: file.nom_fichier_original || '',
+  type_mime: file.type_mime || '',
+}) : null;
+const serializeGroupToClient = (group) => ({
+  classe_id: group.classe_id,
+  nom_classe: group.nom_classe || `Classe ${group.classe_id}`,
+  actif: serializeFileToClient(group.actif),
+  historique: Array.isArray(group.historique) ? group.historique.map(serializeFileToClient) : [],
+});
+export const emploisDuTempsService = {
+

@@ -70,6 +70,21 @@ export const utilisateursService = {
   toClient: userToClient,
 };
 
+// -- Profils liables : PROFESSEUR / ETUDIANT -----------------------
+// GET /utilisateurs/profils -> { professeurs: [...], etudiants: [...] }
+// Alimente les listes déroulantes du formulaire « Nouvel utilisateur ».
+export const profilsLiablesService = {
+  getAll: async () => {
+    const { data } = await api.get('/utilisateurs/profils');
+    return {
+      data: {
+        professeurs: Array.isArray(data?.professeurs) ? data.professeurs : [],
+        etudiants: Array.isArray(data?.etudiants) ? data.etudiants : [],
+      },
+    };
+  },
+};
+
 // -- Professeurs : PROFESSEUR + MatieresArray ----------------------
 // GET /professeurs -> [{ ..., MatieresArray: [{id,nom}] }]
 const profToClient = (p) => ({
@@ -122,6 +137,8 @@ const etudiantToClient = (e) => ({
 });
 export const etudiantsService = {
   getAll: () => mappedGet('/etudiants', etudiantToClient),
+  /** Listes déroulantes du formulaire : classes + filières réellement en base. */
+  getRefs: () => api.get('/etudiants/refs'),
   getOne: async (id) => {
     const { data } = await api.get(`/etudiants/${id}`);
     return { data: etudiantToClient(data) };
@@ -271,12 +288,13 @@ export const sallesService = {
 // GET /notes -> [{ Matricule_Etudiant, Nom_Complet, Nom_Matiere, Lib_Sem, ... }]
 // GET /evaluations -> [{ ..., Lib_Sem, Annee_Academique_Semestre }]
 const noteToClient = (n) => ({
-  id: n.Id_EVALUATION,
+  id: n.Id_EVALUATION || `${n.Matricule_Etudiant || ''}-${n.Nom_Matiere || ''}-${n.Date_Evaluation || ''}`,
+  etudiantId: n.Id_ETUDIANT ?? null,
   matricule: n.Matricule_Etudiant || '',
   etudiant: n.Nom_Complet || '',
   classe: n.Nom_Classe || '',
   matiere: n.Nom_Matiere || '',
-  semestre: n.Lib_Sem || '',
+  semestre: n.Semestre ?? n.Lib_Sem ?? '',
   type: n.Type_Evaluation || '',
   note: n.Note_Evaluation ?? null,
   coefficient: n.Coef_Evaluation ?? 1,
@@ -308,14 +326,22 @@ export const notesService = {
 // -- Absences : ABSENTER -------------------------------------------
 // GET /absences -> [{ ..., Nom_Etudiant, Prenoms_Etudiant, Matricule_Etudiant, ... }]
 const absenceToClient = (a) => ({
+  // ABSENTER n'a pas d'ID auto-incrémenté : une absence est identifiée par la
+  // clé composite (Id_ETUDIANT, Id_UTILISATEUR, Date_absence). On expose donc
+  // les trois composantes pour que justifier/supprimer ciblent la bonne ligne.
   id: a.Id_ETUDIANT,
+  etudiantId: a.Id_ETUDIANT,
+  utilisateurId: a.Id_UTILISATEUR,
   matricule: a.Matricule_Etudiant || '',
   etudiant: `${a.Nom_Etudiant || ''} ${a.Prenoms_Etudiant || ''}`.trim() || '',
   classe: a.Nom_Classe || '',
-  date: a.Date_absence || '',
+  // mysql2 renvoie un objet Date pour Date_absence : on normalise en
+  // 'YYYY-MM-DD' sinon le WHERE du backend échoue avec l'ISO complet.
+  date: a.Date_absence ? String(a.Date_absence).slice(0, 10) : '',
   heures: parseFloat(a.Nbre_heure) || 0,
-  justifiee: a.Justifiee === 1,
+  justifiee: a.Justifiee === 1 || a.Justifiee === true,
   saisiePar: a.Saisie_Par || '',
+  roleCreePar: a.Role_Cree_Par || '',
 });
 export const absencesService = {
   getAll: () => mappedGet('/absences', absenceToClient),
@@ -327,13 +353,13 @@ export const absencesService = {
   }),
   justifier: (payload) => api.put('/absences/justifier', {
     Id_ETUDIANT: payload.etudiantId,
-    Date_absence: payload.date,
+    Date_absence: String(payload.date || '').slice(0, 10),
     Id_UTILISATEUR: payload.utilisateurId,
   }),
   delete: (payload) => api.delete('/absences', {
     data: {
       Id_ETUDIANT: payload.etudiantId,
-      Date_absence: payload.date,
+      Date_absence: String(payload.date || '').slice(0, 10),
       Id_UTILISATEUR: payload.utilisateurId,
     },
   }),
@@ -341,21 +367,65 @@ export const absencesService = {
 };
 
 // -- Versements : VERSEMENT + VERSER -------------------------------
-// GET /versements -> [{ ..., Nom_Etudiant, Prenoms_Etudiant, Matricule_Etudiant, ... }]
+// GET /versements -> une ligne par versement, avec les colonnes reelles :
+//   Montant_Total  = montant total du (global, ex. 500 000 FCFA scolarite)
+//   Montant_Verse  = montant reellement verse sur cette ligne
 const paiementToClient = (v) => ({
   id: v.Id_VERSEMENT,
+  etudiantId: v.Id_ETUDIANT ?? null,
   matricule: v.Matricule_Etudiant || '',
   etudiant: `${v.Nom_Etudiant || ''} ${v.Prenoms_Etudiant || ''}`.trim() || '',
   classe: v.Nom_Classe || '',
+  classeId: v.Id_CLASSE ?? null,
+  filiere: v.Nom_Filiere || '',
+  filiereId: v.Id_FILIERE ?? null,
+  // Libelle de l'echeance (VERSEMENT.Lib_Versement)
   type: v.Lib_Versement || '',
-  montant: parseFloat(v.Montant_Total) || 0,
-  montantPaye: parseFloat(v.Montant) || 0,
+  // Montant du a la scolarite (VERSEMENT.Montant_Total) -- non cumulable
+  montantTotal: parseFloat(v.Montant_Total) || 0,
+  // Montant reellement verse sur cette ligne (VERSER.Montant)
+  montantVerse: parseFloat(v.Montant_Verse ?? v.Montant) || 0,
   dateVersement: v.Date_Versement || '',
-  statut: v.Statut || 'Impaye',
-  etudiantId: v.Id_ETUDIANT ?? null,
+  datePaiement: v.Date_Paiement || '',
+  statut: v.Statut || '',
 });
+
+// GET /versements/totaux -> { totaux: [...], stats: {...} } agrege en base
+const totalEtudiantToClient = (t) => ({
+  etudiantId: t.Id_ETUDIANT,
+  matricule: t.Matricule_Etudiant || '',
+  nom: `${t.Nom_Etudiant || ''} ${t.Prenoms_Etudiant || ''}`.trim() || 'Étudiant inconnu',
+  classe: t.Nom_Classe || '',
+  classeId: t.Id_CLASSE ?? null,
+  filiere: t.Nom_Filiere || '',
+  filiereId: t.Id_FILIERE ?? null,
+  totalDu: Number(t.totalDu) || 0,
+  totalPaye: Number(t.totalPaye) || 0,
+  reste: Number(t.reste) || 0,
+  progression: Number(t.progression) || 0,
+  statut: t.statut || 'Impayé',
+  nombreVersements: Number(t.nombreVersements) || 0,
+  dernierPaiement: t.dernierPaiement || '',
+});
+
+const statsPaiementToClient = (s) => ({
+  totalDu: Number(s?.totalDu) || 0,
+  totalPercu: Number(s?.totalPercu) || 0,
+  reste: Number(s?.reste) || 0,
+  tauxRecouvrement: Number(s?.tauxRecouvrement) || 0,
+  etudiants: Number(s?.etudiants) || 0,
+  soldes: Number(s?.soldes) || 0,
+  partiels: Number(s?.partiels) || 0,
+  impayes: Number(s?.impayes) || 0,
+});
+
 export const paiementsService = {
   getAll: () => mappedGet('/versements', paiementToClient),
+  getTotaux: async () => {
+    const { data } = await api.get('/versements/totaux');
+    const totaux = Array.isArray(data?.totaux) ? data.totaux : [];
+    return { data: { totaux: totaux.map(totalEtudiantToClient), stats: statsPaiementToClient(data?.stats) } };
+  },
   getDetail: (id) => api.get(`/versements/etudiant/detail/${id}`),
   create: (payload) => api.post('/versements', {
     Id_ETUDIANT: payload.etudiantId,
@@ -371,6 +441,7 @@ export const paiementsService = {
   }),
   delete: (id) => api.delete(`/versements/${id}`),
   toClient: paiementToClient,
+  toTotalClient: totalEtudiantToClient,
 };
 
 // -- Evenements : EVENEMENT_ECOLE ----------------------------------
@@ -410,8 +481,11 @@ export const evenementsService = {
   toClient: evenementToClient,
 };
 
-// -- Notifications : /notifications/admin/liste --------------------
-// GET /notifications/admin/liste -> [{ id, Titre_Notif, Message_Notif, Type, ... }]
+// -- Notifications ciblées : /notifications/admin/* ---------------
+// GET /notifications/admin/liste -> [{ id, Titre_Notif, Message_Notif, Type, Cible,
+//   Id_Filiere, Id_Classe, Id_Etudiant, Scheduled_At, Sent_At, Date_Notif, created_by,
+//   Nom_Filiere, Nom_Classe, Nom_Etudiant, Matricule_Etudiant, Auteur_Nom,
+//   total_recipients, total_lus }]
 const notifToClient = (n) => ({
   id: n.id,
   titre: n.Titre_Notif || '',
@@ -421,26 +495,61 @@ const notifToClient = (n) => ({
   idFiliere: n.Id_Filiere ?? null,
   idClasse: n.Id_Classe ?? null,
   idEtudiant: n.Id_Etudiant ?? null,
+  // Libellés de cible issus des tables FILIERE / CLASSE / ETUDIANT
+  cibleLibelle: n.Cible === 'filiere' ? (n.Nom_Filiere || `Filière #${n.Id_Filiere ?? '?'}`)
+    : n.Cible === 'classe' ? (n.Nom_Classe || `Classe #${n.Id_Classe ?? '?'}`)
+    : n.Cible === 'etudiant' ? (n.Nom_Etudiant || `Étudiant #${n.Id_Etudiant ?? '?'}`)
+    : 'Tous les étudiants',
+  matricule: n.Matricule_Etudiant || '',
   dateProgrammee: n.Scheduled_At || '',
   dateEnvoi: n.Sent_At || '',
   dateCreation: n.Date_Notif || '',
-  auteur: n.created_by ?? null,
-  destinataires: n.total_recipients || 0,
-  lues: n.total_lus || 0,
-  envoyee: n.Sent_At ? 'Envoyee' : 'Programmee',
+  auteur: n.Auteur_Nom || (n.created_by ? `Utilisateur #${n.created_by}` : ''),
+  destinataires: Number(n.total_recipients) || 0,
+  lues: Number(n.total_lus) || 0,
+  // 'Envoyee' | 'Programmee' — le brouillon/admin reflète l'état de Sent_At en base
+  statut: n.Sent_At ? 'Envoyee' : 'Programmee',
 });
+
+/** Payload attendu par POST /notifications/send-cible et PUT /notifications/admin/:id. */
+const notifVersApi = (payload) => ({
+  Titre_Notif: payload.titre,
+  Message_Notif: payload.message,
+  Type: payload.type || 'autre',
+  Cible: payload.cible || 'tous',
+  // Les colonnes cibles ne doivent être envoyées que pour la cible concernée,
+  // sinon on écraserait la cible précédente en modification.
+  Id_Filiere: payload.cible === 'filiere' ? (payload.idFiliere || null) : null,
+  Id_Classe: payload.cible === 'classe' ? (payload.idClasse || null) : null,
+  Id_Etudiant: payload.cible === 'etudiant' ? (payload.idEtudiant || null) : null,
+  Scheduled_At: payload.dateProgrammee || null,
+});
+
 export const notificationsService = {
   getAll: () => mappedGet('/notifications/admin/liste', notifToClient),
-  create: (payload) => api.post('/notifications/send-cible', {
-    Titre_Notif: payload.titre,
-    Message_Notif: payload.message,
-    Type: payload.type || 'autre',
-    Cible: payload.cible || 'tous',
-    Id_Filiere: payload.idFiliere || null,
-    Id_Classe: payload.idClasse || null,
-    Id_Etudiant: payload.idEtudiant || null,
-    Scheduled_At: payload.dateProgrammee || null,
-  }),
+  /** Listes déroulantes du formulaire : filières, classes, étudiants réels. */
+  getCibles: async () => {
+    const { data } = await api.get('/notifications/cibles');
+    return {
+      data: {
+        filieres: (data?.filieres || []).map((f) => ({ id: f.Id_FILIERE, nom: f.Nom_Filiere || '' })),
+        classes: (data?.classes || []).map((c) => ({
+          id: c.Id_CLASSE, nom: c.Nom_Classe || '', filiereId: c.Id_FILIERE ?? null, filiere: c.Nom_Filiere || '',
+        })),
+        etudiants: (data?.etudiants || []).map((e) => ({
+          id: e.Id_ETUDIANT,
+          nom: e.Nom_Etudiant || '',
+          prenoms: e.Prenoms_Etudiant || '',
+          matricule: e.Matricule_Etudiant || '',
+          classeId: e.Id_CLASSE ?? null,
+          filiereId: e.Id_FILIERE ?? null,
+        })),
+      },
+    };
+  },
+  create: (payload) => api.post('/notifications/send-cible', notifVersApi(payload)),
+  update: (id, payload) => api.put(`/notifications/admin/${id}`, notifVersApi(payload)),
+  envoyer: (id) => api.post(`/notifications/admin/${id}/envoyer`),
   delete: (id) => api.delete(`/notifications/admin/${id}`),
   toClient: notifToClient,
 };
